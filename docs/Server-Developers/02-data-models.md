@@ -61,7 +61,7 @@ All required fields must be present:
   "elementId": "urn:platform:type:Equipment",
   "displayName": "Manufacturing Equipment",
   "namespaceUri": "urn:platform:namespace:production",
-  "sourceTypeId": "urn:platform:type:BaseAsset",
+  "sourceTypeId": "EquipmentClass",
   "version": "1.2.0",
   "schema": {
     "type": "object",
@@ -83,10 +83,12 @@ All required fields must be present:
 - **elementId** (string, required): Unique string identifier
 - **displayName** (string, required): Human-readable name
 - **namespaceUri** (string, required): Namespace URI
-- **sourceTypeId** (string, required): Base/source type identifier this type derives from
+- **sourceTypeId** (string, required): Identifier of this type within its source namespace (e.g., an OPC UA BrowseName or NodeId), so clients can correlate back to the originating definition
 - **version** (string | null): Semantic version string (recommended)
 - **schema** (object, required): JSON Schema definition. Use `["number", "null"]` type unions for nullable fields.
 - **related** (object | null): Related type metadata
+
+A scalar `schema.type` (`"number"`, `"integer"`, `"string"`, `"boolean"`) defines a **leaf** type whose instances return a bare scalar value; `"type": "object"` defines a **branch** type. When an instance's type cannot be determined at discovery or import time, register a placeholder `UnknownType` (schema `{"type": "object"}`) and use its `elementId` as the instance's `typeElementId`, so every referenced `typeElementId` resolves to a type.
 
 ## Namespace Representation
 
@@ -110,6 +112,7 @@ Every relationship type must define its reverse:
   "elementId": "urn:platform:reltype:HasComponent",
   "displayName": "Has Component",
   "namespaceUri": "urn:platform:namespace:core",
+  "relationshipId": "HasComponent",
   "reverseOf": "ComponentOf"
 }
 ```
@@ -118,7 +121,8 @@ Every relationship type must define its reverse:
 - **elementId** (string): Unique string identifier
 - **displayName** (string): Human-readable name
 - **namespaceUri** (string): Namespace URI
-- **reverseOf** (string): ElementId or name of the inverse relationship — all relationships are bidirectional
+- **relationshipId** (string): Identifier of this relationship type within its source namespace
+- **reverseOf** (string): ElementId of the inverse relationship — all relationships are bidirectional
 
 Common built-in relationship types:
 - `HasParent` / `HasChildren` — hierarchical organization
@@ -206,7 +210,7 @@ For composition objects with `maxDepth > 1`, populate `components`:
 {
   "isComposition": true,
   "value": null,
-  "quality": "Good",
+  "quality": "GoodNoData",
   "timestamp": "2025-01-15T12:00:00Z",
   "components": {
     "urn:platform:object:child-1": {

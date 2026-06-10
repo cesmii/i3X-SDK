@@ -2,13 +2,13 @@
 
 ## Overview
 
-The i3X API provides a standardized interface for accessing and manipulating manufacturing data across diverse platforms. This guide is designed for application developers building clients that consume the API to create analytics, visualizations, notifications, and machine learning applications.
+The i3X API provides a standardized interface for accessing and manipulating manufacturing data across diverse platforms. This guide is provided without warranty for application developers building clients that consume the API to create analytics, visualizations, notifications, and machine learning applications.
 
 > **Note:** These documents are a companion to the formal [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md). If there are differences between the two, the Implementation Guide should be considered authoritative; please report any errors you observe.
 
 ## Purpose and Scope
 
-i3x aims to solve the fragmentation problem in manufacturing information systems by providing a common set of server primitives that enable application portability across different platform implementations. This means you can write your application once and deploy it against any platform that implements this API specification.
+i3X aims to solve the fragmentation problem in manufacturing information systems by providing a common set of server primitives that enable application portability across different platform implementations. This means you can write your application once and deploy it against any platform that implements this API specification, and provides your expected information model.
 
 ### Key Benefits for Client Developers
 
@@ -80,5 +80,5 @@ This client developer guide is organized into the following categories:
 
 - **Demo Server**: https://api.i3x.dev/v1
 - **API Documentation**: https://api.i3x.dev/v1/docs
-- **RFC Specification**: https://github.com/cesmii/API
-- **Community Email**: rfc@cesmii.org
+- **RFC Specification**: https://github.com/cesmii/i3X
+- **Community Email**: i3x@cesmii.org

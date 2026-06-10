@@ -6,6 +6,8 @@
 
 **Symptoms**: 429 Too Many Requests responses
 
+**Note**: Rate limiting is server-specific behavior; the i3X specification does not define a 429 response.
+
 **Solution**: Implement exponential backoff and respect retry-after headers
 
 ```javascript
@@ -46,7 +48,7 @@ if (!info.result.capabilities.query.history) {
 
 **Explanation**: The server reached its internal depth limit before completing the requested `maxDepth`. This is not an error — the response contains valid data, just not as deep as requested.
 
-**Solution**: Process partial results normally, optionally retry with a smaller `maxDepth`:
+**Solution**: Process partial results normally. To retrieve the missing composition data, issue follow-up requests targeting the specific `elementId`s that were not fully expanded:
 
 ```javascript
 const response = await fetch('https://api.i3x.dev/v1/objects/value', {
@@ -133,6 +135,23 @@ const streamObjectData = async (token, elementIds, callback) => {
   read();
   return { subscriptionId };
 };
+```
+
+### Issue: Subscription Returns 404 on Sync or Stream
+
+**Symptoms**: A previously working subscription suddenly returns 404 Not Found from `/subscriptions/sync` or `/subscriptions/stream`
+
+**Explanation**: Servers delete subscriptions that receive neither a `/sync` call nor an active SSE stream within their Time-To-Live (TTL) interval. Once deleted, a subscription cannot be revived — all queued values are discarded.
+
+**Solution**: Poll `/sync` more frequently than the server's TTL. On a 404, re-create the subscription, re-register your objects, and optionally backfill the gap with a `/objects/history` query:
+
+```javascript
+const data = await syncResponse.json();
+if (syncResponse.status === 404) {
+  // Subscription expired — re-create and re-register
+  const { subscriptionId } = await subscribeToObjects(token, elementIds, callback);
+  // Optionally backfill missed values via POST /objects/history
+}
 ```
 
 ### Issue: Unexpected `success: false` in Bulk Results

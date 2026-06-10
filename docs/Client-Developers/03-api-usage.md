@@ -150,7 +150,7 @@ const getRelatedObjects = async (token, elementIds, relationshipType = null) => 
     },
     body: JSON.stringify({
       elementIds: elementIds,
-      relationshiptype: relationshipType,
+      relationshipType: relationshipType,
       includeMetadata: true
     })
   });
@@ -201,6 +201,11 @@ const subscribeToObjects = async (token, elementIds, callback) => {
   });
 
   // Step 3: Open SSE stream for real-time updates (only if server advertises stream support)
+  const info = await getServerInfo();
+  if (!info.capabilities.subscribe.stream) {
+    console.warn('Server does not support streaming — poll with /subscriptions/sync instead');
+    return { subscriptionId };
+  }
   const streamResponse = await fetch('https://api.i3x.dev/v1/subscriptions/stream', {
     method: 'POST',
     headers: {

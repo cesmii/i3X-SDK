@@ -45,7 +45,7 @@ ObjectTypes define the schema for objects:
   "elementId": "type-element-id",
   "displayName": "Type Name",
   "namespaceUri": "urn:namespace:identifier",
-  "sourceTypeId": "base-type-element-id",
+  "sourceTypeId": "source-namespace-type-id",
   "version": "1.0.0",
   "schema": {
     "type": "object",
@@ -62,7 +62,7 @@ Fields:
 - `elementId` (required): Unique string identifier
 - `displayName` (required): Human-readable name
 - `namespaceUri` (required): Namespace URI
-- `sourceTypeId` (required): Base/source type identifier
+- `sourceTypeId` (required): Identifier of this type within its source namespace (e.g., an OPC UA BrowseName or NodeId)
 - `version` (optional): Semantic version string
 - `schema` (required): JSON Schema definition
 - `related` (optional): Related type metadata
@@ -92,7 +92,7 @@ For composition objects queried with `maxDepth > 1`, child component values appe
   "result": {
     "isComposition": true,
     "value": null,
-    "quality": "Good",
+    "quality": "GoodNoData",
     "timestamp": "2025-01-15T12:00:00Z",
     "components": {
       "child-element-id-1": {
@@ -248,14 +248,14 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 ```json
 {
   "elementIds": ["urn:platform:object:12345"],
-  "relationshiptype": "HasComponent",
+  "relationshipType": "HasComponent",
   "includeMetadata": true
 }
 ```
 
 **Parameters:**
 - `elementIds` (string[], required): Array of element IDs to query
-- `relationshiptype` (string | null): Filter by relationship type
+- `relationshipType` (string | null): Filter by relationship type
 - `includeMetadata` (boolean, default: false): Include full metadata in response
 
 ### Subscription Models

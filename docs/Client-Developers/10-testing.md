@@ -28,8 +28,7 @@ export const createMockClient = () => ({
           quality: 'Good',
           timestamp: '2025-01-15T12:00:00Z',
           components: null
-        },
-        error: null
+        }
       }
     ]
   }),

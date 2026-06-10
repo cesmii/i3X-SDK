@@ -16,7 +16,7 @@ i3X is an API, it does not provide a data platform or wire protocol. Rather, its
 
 | Concept | Description |
 |---------|-------------|
-| **Namespace** | Logical scope grouping related types and instances (identified by URI) |
+| **Namespace** | Logical scope grouping related types (identified by URI); instances are not namespace-scoped |
 | **ObjectType** | Schema definition for a class of objects (machines, sensors, orders) |
 | **Object** | An instance with attributes, values, and hierarchical organization |
 | **RelationshipType** | Connection definition between objects (HasParent, HasComponent, custom) |
@@ -27,7 +27,7 @@ i3X is an API, it does not provide a data platform or wire protocol. Rather, its
 Namespace (URI)
 └── ObjectType (schema)
     └── Object (instance)
-        ├── Attributes (metadata: DisplayName, ParentId, NamespaceURI)
+        ├── Attributes (metadata: DisplayName, ParentId, TypeElementId)
         └── Values (VQT: value, quality, timestamp)
             └── Child Objects (composition, controllable via maxDepth)
 ```
@@ -66,8 +66,8 @@ Namespace (URI)
 
 ### Relationships
 
-Understanding relationships is key to understanding i3X. The API requires two kinds of relationships, 
-and offers a third, optional kind if supported by the underlying platform.
+Understanding relationships is key to understanding i3X. The API requires Hierarchical relationships, 
+recommends Composition relationships, and offers a third, optional kind if supported by the underlying platform.
 
 - **Hierarchical** — An organizational parent/child relationship of objects (eg: Plant > Area > Line)
 - **Composition** — How a complex object is constructed of component parts, each part having its own ObjectType (indicated with `isComposition`)
@@ -177,7 +177,7 @@ with i3x.Client("https://api.i3x.dev/v1") as client:
     print()
 
     # Subscribe and stream
-    client.on_value_change = lambda c, vc: print(f"{"sensor-001"}: {vc.value}")
+    client.on_value_change = lambda c, vc: print(f"sensor-001: {vc.value}")
     sub = client.subscribe(["sensor-001"])
     import time; time.sleep(5)  # watch for changes
 

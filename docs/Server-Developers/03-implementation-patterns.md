@@ -30,7 +30,7 @@ def server_info():
 
 ## Pattern 2: Standard Response Helpers
 
-All responses must use the `{success, result}` or `{success, error}` envelope:
+All responses must use the `{success, result}` or `{success, responseDetail}` envelope:
 
 ```python
 def success_response(result, status_code=200):
@@ -151,7 +151,7 @@ def get_related_objects():
     try:
         data = request.get_json()
         element_ids = data.get('elementIds', [])
-        relationship_type = data.get('relationshiptype')
+        relationship_type = data.get('relationshipType')
         include_metadata = data.get('includeMetadata', False)
 
         results = []
@@ -210,15 +210,15 @@ def get_object_value():
         if not element_ids:
             return error_response(400, 'Bad Request', 'elementIds is required')
 
-        # Clamp depth to server maximum
-        effective_depth = min(max_depth, SERVER_MAX_DEPTH) if max_depth != 0 else SERVER_MAX_DEPTH
-        depth_limited = (max_depth == 0 or max_depth > SERVER_MAX_DEPTH)
-
         results = []
+        depth_limited = False
         for eid in element_ids:
             try:
-                value_result = data_repo.get_object_value([eid], effective_depth)
                 # value_result shape: {isComposition, value, quality, timestamp, components}
+                # was_truncated is True only when SERVER_MAX_DEPTH actually cut the
+                # composition tree short — not merely because a deep maxDepth was requested
+                value_result, was_truncated = data_repo.get_object_value([eid], max_depth)
+                depth_limited = depth_limited or was_truncated
                 results.append({"success": True, "elementId": eid, "result": value_result})
             except KeyError:
                 results.append({"success": False, "elementId": eid,
@@ -227,8 +227,8 @@ def get_object_value():
         top_level_success = all(r["success"] for r in results)
         response_body = {"success": top_level_success, "results": results}
 
-        # Return 206 if server depth limit was reached
-        status_code = 206 if depth_limited and top_level_success else (200 if top_level_success else 200)
+        # Return 206 only when the server's depth limit truncated the result
+        status_code = 206 if depth_limited else 200
         return jsonify(response_body), status_code
 
     except Exception as e:
@@ -376,13 +376,13 @@ class TypeRepository:
     def list_object_types(self, namespace_uri: Optional[str] = None) -> List[Dict]:
         pass
 
-    def get_object_types_by_ids(self, element_ids: List[str]) -> List[Dict]:
+    def get_object_type_by_id(self, element_id: str) -> Optional[Dict]:
         pass
 
     def list_relationship_types(self, namespace_uri: Optional[str] = None) -> List[Dict]:
         pass
 
-    def get_relationship_types_by_ids(self, element_ids: List[str]) -> List[Dict]:
+    def get_relationship_type_by_id(self, element_id: str) -> Optional[Dict]:
         pass
 
 type_repo = TypeRepository()
@@ -496,11 +496,18 @@ class SubscriptionRepository:
         return True
 
     def sync(self, sub_id: str, last_sequence_number: Optional[int]) -> Optional[Dict]:
-        """Return pending updates, acknowledging all up to last_sequence_number."""
+        """Return pending updates, acknowledging all up to last_sequence_number.
+
+        Spec notes: -1 acknowledges (clears) the entire queue; an omitted or
+        invalid last_sequence_number MUST NOT clear the queue. Servers MUST
+        also return an error if the subscription has an open SSE stream.
+        """
         sub = self.subscriptions.get(sub_id)
         if not sub:
             return None
-        if last_sequence_number is not None:
+        if last_sequence_number == -1:
+            sub['queue'] = []
+        elif last_sequence_number is not None:
             sub['queue'] = [u for u in sub['queue'] if u['sequenceNumber'] > last_sequence_number]
         return sub['queue']  # List of {sequenceNumber, updates: [...]}
 

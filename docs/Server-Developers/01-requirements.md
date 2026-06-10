@@ -102,13 +102,13 @@ Update Endpoints:
   PUT    /objects/history              # Update historical values (bulk)        [optional]
 
 Subscription Endpoints:
-  POST   /subscriptions                # Create new subscription               [optional]
-  POST   /subscriptions/list           # Retrieve subscription details         [optional]
-  POST   /subscriptions/delete         # Delete subscriptions by ID            [optional]
-  POST   /subscriptions/register       # Add monitored objects                 [optional]
-  POST   /subscriptions/unregister     # Remove monitored objects              [optional]
+  POST   /subscriptions                # Create new subscription               [required]
+  POST   /subscriptions/list           # Retrieve subscription details         [required]
+  POST   /subscriptions/delete         # Delete subscriptions by ID            [required]
+  POST   /subscriptions/register       # Add monitored objects                 [required]
+  POST   /subscriptions/unregister     # Remove monitored objects              [required]
   POST   /subscriptions/stream         # Open SSE stream                       [optional]
-  POST   /subscriptions/sync           # Poll with sequence acknowledgment     [optional]
+  POST   /subscriptions/sync           # Poll with sequence acknowledgment     [required]
 ```
 
 Note: Subscription management uses flat POST endpoints with `subscriptionId` in the request body — **not** per-subscription URL paths.

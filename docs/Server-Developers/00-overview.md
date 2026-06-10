@@ -19,8 +19,8 @@ i3X defines a common set of server primitives that manufacturing information pla
 
 This API is designed for implementation by both individual platforms, or combinations of platforms that work together against a unified information model, to provide the required capabilities. Examples include:
 
-- Historians (e.g., OSI Pi, Rockwell Automation platforms)
-- SCADA System (e.g., Inductive Automation Ignition)
+- Historians 
+- SCADA System 
 - Manufacturing Execution Systems (MES)
 - Manufacturing Operations Management (MOM) systems
 - Enterprise Manufacturing Intelligence (EMI) platforms
@@ -39,7 +39,7 @@ This API is designed for implementation by both individual platforms, or combina
 │    Visualization, ML, etc.)              │
 └──────────────────────────────────────────┘
                 ↓ ↑
-             [i3x API]
+             [i3X API]
                 ↓ ↑
 ┌──────────────────────────────────────────┐
 │   Your Platform Implementation           │
@@ -91,4 +91,4 @@ This server implementation guide is organized into the following categories:
 - **RFC Specification**: https://github.com/cesmii/i3X
 - **Demo Server**: https://api.i3x.dev/v1
 - **Issue Tracker**: https://github.com/cesmii/i3X/issues
-- **Community Email**: rfc@cesmii.org
+- **Community Email**: i3x@cesmii.org
