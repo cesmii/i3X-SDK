@@ -1,10 +1,10 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 # Gotchas
 
-The i3X API is small, but a few of its rules are counterintuitive on first read. Each item below is normative behavior from the [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md) — not server quirks.
+The i3X API is concise, but a few of its rules may seem counterintuitive on first read -- there's logic behind each, but they're worth explaining. Each item below is normative behavior from the [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md) — not server quirks.
 
 ## Reading Values
 
