@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This draft guide is proposed for platform vendors and server implementers who want to expose their manufacturing information systems through the i3X API. By implementing this standardized interface, you enable application developers to build portable applications that work across multiple platforms.
+This guide is provided without warranty for platform vendors and server implementers who want to expose their manufacturing information systems through the i3X API. By implementing this standardized interface, you enable application developers to build portable applications that work across multiple platforms.
 
 > **Note:** These documents are a companion to the formal [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md). If there are differences between the two, the Implementation Guide should be considered authoritative; please report any errors you observe.
 
