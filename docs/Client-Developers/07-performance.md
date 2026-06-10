@@ -98,21 +98,28 @@ For applications where data loss is unacceptable, use the sync endpoint instead 
 
 ```javascript
 // Reliable polling with sequence number acknowledgment
-const pollSubscription = async (token, subscriptionId, lastSequence = 0) => {
+// Pass lastSequenceNumber from the previous response; omit on the first call
+const pollSubscription = async (token, clientId, subscriptionId, lastSequenceNumber) => {
+  const body = { clientId, subscriptionId };
+  if (lastSequenceNumber !== undefined) {
+    body.lastSequenceNumber = lastSequenceNumber;
+  }
   const response = await fetch('https://api.i3x.dev/v1/subscriptions/sync', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      subscriptionId: subscriptionId,
-      acknowledgeSequence: lastSequence
-    })
+    body: JSON.stringify(body)
   });
 
+  // HTTP 206 = queue overflowed, some updates were dropped
+  if (response.status === 206) {
+    console.warn('Subscription queue overflowed — some updates were dropped');
+  }
+
   const data = await response.json();
-  return data.result;  // Contains updates and new sequenceNumber
+  return data.result;  // Array of {sequenceNumber, updates: [...]} batches
 };
 ```
 

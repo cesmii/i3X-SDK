@@ -18,7 +18,7 @@ i3X is coordinated by [CESMII](https://www.cesmii.org), a U.S. Department of Ene
 
 ### What is the current status of i3X?
 
-i3X is in **Beta** (as of Q2 2026). API signatures and responses are largely stable, but there is continued refinement in-progress around the subscription interfaces. Documentation updates are also in-flight. The beta is suitable for early development, and evaluation, and should be fully stable by Q3 2026.
+i3X reached **1.0 release** (Q2 2026). The specification is stable and normative.
 
 The public demo server at [https://api.i3x.dev/v1/docs](https://api.i3x.dev/v1/docs) is available for testing.
 
@@ -34,7 +34,7 @@ Yes. The specification is open source under the MIT license. The GitHub reposito
 
 ### Can I use this with AI?
 
-Yes! The i3X API was designed to be easily understood by both humans and AI. Direct your AI to [read the Spec](https://api.i3x.dev/v1/openapi.json) and [Implementation Guide](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0-Beta/spec/IMPLEMENTATION_GUIDE.md) into its context.
+Yes! The i3X API was designed to be easily understood by both humans and AI. Direct your AI to [read the Spec](https://api.i3x.dev/v1/openapi.json) and [Implementation Guide](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/IMPLEMENTATION_GUIDE.md) into its context.
 
 ### Is i3X only for Python?
 
@@ -80,7 +80,7 @@ Review the contributing guidelines in `Contributing.md` in the [GitHub repo](htt
 
 ### Where can I find the formal specification?
 
-The specification comes in two forms: an OpenAPI Spec and an Implementation Guide, both are in Beta, and being developed publicly in the [cesmii/i3x GitHub repository](https://github.com/cesmii/i3x). The live OpenAPI specification with interactive docs is at [https://api.i3x.dev/v1/docs](https://api.i3x.dev/v1/docs), while the Implementation Guide is at [text](https://github.com/cesmii/i3X/blob/1.0-Beta/spec/IMPLEMENTATION_GUIDE.md).
+The specification comes in two forms: an OpenAPI Spec and an Implementation Guide, both at 1.0 release, available in the [cesmii/i3x GitHub repository](https://github.com/cesmii/i3x). The live OpenAPI specification with interactive docs is at [https://api.i3x.dev/v1/docs](https://api.i3x.dev/v1/docs), while the Implementation Guide is at [https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md).
 
 ### Where can I find more information?
 

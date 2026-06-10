@@ -35,13 +35,15 @@ const safeApiCall = async (url, options = {}) => {
       console.warn('Partial results: server depth limit reached');
     } else if (!response.ok) {
       const data = await response.json();
-      throw new Error(`API Error ${data.error?.code}: ${data.error?.message}`);
+      const rd = data.responseDetail;
+      throw new Error(`API Error ${rd?.status}: ${rd?.detail}`);
     }
 
     const data = await response.json();
 
     if (!data.success) {
-      throw new Error(`API Error ${data.error.code}: ${data.error.message}`);
+      const rd = data.responseDetail;
+      throw new Error(`API Error ${rd.status}: ${rd.detail}`);
     }
 
     return data.result ?? data.results;

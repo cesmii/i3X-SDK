@@ -193,10 +193,8 @@ Return a bulk response. Each item in `results` corresponds to one `elementId` in
         "isComposition": false,
         "value": 125.5,
         "quality": "Good",
-        "timestamp": "2025-01-15T12:00:00Z",
-        "components": null
-      },
-      "error": null
+        "timestamp": "2025-01-15T12:00:00Z"
+      }
     }
   ]
 }
@@ -248,8 +246,7 @@ If the server reaches its depth limit before fulfilling `maxDepth`, return **HTT
           { "value": 120.0, "quality": "Good", "timestamp": "2025-01-15T10:00:00Z" },
           { "value": 125.5, "quality": "Good", "timestamp": "2025-01-15T12:00:00Z" }
         ]
-      },
-      "error": null
+      }
     }
   ]
 }
@@ -266,7 +263,7 @@ If the server reaches its depth limit before fulfilling `maxDepth`, return **HTT
 }
 ```
 
-Both fields are optional. `clientId` scopes the subscription to a client identifier.
+`clientId` is **required** and scopes the subscription to a client identifier. `displayName` is optional.
 
 ### CreateSubscriptionResponse
 
@@ -283,10 +280,11 @@ Both fields are optional. `clientId` scopes the subscription to a client identif
 
 ### RegisterMonitoredItemsRequest (POST /subscriptions/register)
 
-The `subscriptionId` is passed in the body — not in the URL path:
+Both `clientId` and `subscriptionId` are passed in the body — not in the URL path:
 
 ```json
 {
+  "clientId": "my-app-instance-001",
   "subscriptionId": "sub-12345",
   "elementIds": ["urn:platform:object:12345", "urn:platform:object:12346"],
   "maxDepth": 1
@@ -295,16 +293,17 @@ The `subscriptionId` is passed in the body — not in the URL path:
 
 ### SubscriptionSyncRequest (POST /subscriptions/sync)
 
-Uses monotonically increasing `sequenceNumber` (64-bit unsigned, starting at 1) to ensure no data loss:
+Uses monotonically increasing `sequenceNumber` (64-bit unsigned, starting at 1) to ensure no data loss. Omit `lastSequenceNumber` on the first call:
 
 ```json
 {
+  "clientId": "my-app-instance-001",
   "subscriptionId": "sub-12345",
-  "acknowledgeSequence": 42
+  "lastSequenceNumber": 42
 }
 ```
 
-Server queues updates with sequence numbers. Client acknowledges the last received sequence when polling for new data. Each subscription has independent numbering.
+Server queues updates with sequence numbers. Client acknowledges the last received sequence when polling for new data. Each subscription has independent numbering. Return HTTP 206 if the queue overflowed and updates were dropped.
 
 ### SubscriptionDetail (from POST /subscriptions/list)
 

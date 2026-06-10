@@ -37,17 +37,18 @@ def success_response(result, status_code=200):
     """Wrap a result in the standard success envelope."""
     return jsonify({"success": True, "result": result}), status_code
 
-def error_response(code: int, message: str):
-    """Wrap an error in the standard failure envelope."""
+def error_response(code: int, title: str, detail: str = None):
+    """Wrap an error using RFC 9457 responseDetail."""
     return jsonify({
         "success": False,
-        "error": {"code": code, "message": message}
+        "responseDetail": {"title": title, "status": code, "detail": detail or title}
     }), code
 
 def bulk_response(results: list, status_code=200):
     """
     Return a bulk response. results is a list of dicts:
-    {"success": bool, "elementId": str|None, "result": any, "error": dict|None}
+    {"success": bool, "elementId": str|None, "result": any}
+    Failed items include "responseDetail" instead of "result".
     Top-level success is False if any item failed.
     """
     top_level_success = all(r["success"] for r in results)
@@ -115,7 +116,7 @@ def list_objects():
         return success_response(objects)
 
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 
 @app.route('/objects/list', methods=['POST'])
 @require_auth
@@ -127,21 +128,21 @@ def get_objects_by_ids():
         include_metadata = data.get('includeMetadata', False)
 
         if not element_ids:
-            return error_response(400, 'elementIds is required')
+            return error_response(400, 'Bad Request', 'elementIds is required')
 
         results = []
         for eid in element_ids:
             obj = repo.get_object(eid)
             if obj:
-                results.append({"success": True, "elementId": eid, "result": obj, "error": None})
+                results.append({"success": True, "elementId": eid, "result": obj})
             else:
-                results.append({"success": False, "elementId": eid, "result": None,
-                                 "error": {"code": 404, "message": f"ElementId not found: {eid}"}})
+                results.append({"success": False, "elementId": eid,
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Element not found: {eid}"}})
 
         return bulk_response(results)
 
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 
 @app.route('/objects/related', methods=['POST'])
 @require_auth
@@ -156,12 +157,12 @@ def get_related_objects():
         results = []
         for eid in element_ids:
             related = repo.get_related_objects(eid, relationship_type, include_metadata)
-            results.append({"success": True, "elementId": eid, "result": related, "error": None})
+            results.append({"success": True, "elementId": eid, "result": related})
 
         return bulk_response(results)
 
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 ```
 
 ## Pattern 4: Value and History Data Access
@@ -207,7 +208,7 @@ def get_object_value():
         max_depth = data.get('maxDepth', 1)
 
         if not element_ids:
-            return error_response(400, 'elementIds is required')
+            return error_response(400, 'Bad Request', 'elementIds is required')
 
         # Clamp depth to server maximum
         effective_depth = min(max_depth, SERVER_MAX_DEPTH) if max_depth != 0 else SERVER_MAX_DEPTH
@@ -218,10 +219,10 @@ def get_object_value():
             try:
                 value_result = data_repo.get_object_value([eid], effective_depth)
                 # value_result shape: {isComposition, value, quality, timestamp, components}
-                results.append({"success": True, "elementId": eid, "result": value_result, "error": None})
+                results.append({"success": True, "elementId": eid, "result": value_result})
             except KeyError:
-                results.append({"success": False, "elementId": eid, "result": None,
-                                 "error": {"code": 404, "message": f"ElementId not found: {eid}"}})
+                results.append({"success": False, "elementId": eid,
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Element not found: {eid}"}})
 
         top_level_success = all(r["success"] for r in results)
         response_body = {"success": top_level_success, "results": results}
@@ -232,7 +233,7 @@ def get_object_value():
 
     except Exception as e:
         app.logger.error(f"Error retrieving values: {str(e)}")
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 
 @app.route('/objects/history', methods=['POST'])
 @require_auth
@@ -256,54 +257,71 @@ def get_object_history():
             try:
                 history = data_repo.get_object_history([eid], start_time, end_time, max_depth)
                 # history shape: {isComposition, values: [{value, quality, timestamp}]}
-                results.append({"success": True, "elementId": eid, "result": history, "error": None})
+                results.append({"success": True, "elementId": eid, "result": history})
             except KeyError:
-                results.append({"success": False, "elementId": eid, "result": None,
-                                 "error": {"code": 404, "message": f"ElementId not found: {eid}"}})
+                results.append({"success": False, "elementId": eid,
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Element not found: {eid}"}})
 
         return bulk_response(results)
 
     except ValueError as e:
-        return error_response(400, str(e))
+        return error_response(400, 'Bad Request', str(e))
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 
-@app.route('/objects/<element_id>/value', methods=['PUT'])
+@app.route('/objects/value', methods=['PUT'])
 @require_auth
-def update_object_value(element_id: str):
-    """Update an object's current value"""
+def update_object_values():
+    """Update current values for one or more objects (bulk)"""
     try:
         data = request.get_json()
-        # Expect a VQT: {value, quality, timestamp}
-        vqt = {
-            "value": data.get('value'),
-            "quality": data.get('quality', 'Good'),
-            "timestamp": data.get('timestamp')
-        }
+        updates = data.get('updates', [])  # [{elementId, value: {value, quality, timestamp}}]
 
-        data_repo.update_object_value(element_id, vqt)
-        return success_response(None)
+        if not updates:
+            return error_response(400, 'Bad Request', 'updates is required')
 
-    except KeyError:
-        return error_response(404, f'ElementId not found: {element_id}')
+        results = []
+        for update in updates:
+            eid = update.get('elementId')
+            vqt = update.get('value', {})
+            try:
+                data_repo.update_object_value(eid, vqt)
+                results.append({"success": True, "elementId": eid, "result": None})
+            except KeyError:
+                results.append({"success": False, "elementId": eid,
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Element not found: {eid}"}})
+
+        return bulk_response(results)
+
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 
-@app.route('/objects/<element_id>/history', methods=['PUT'])
+@app.route('/objects/history', methods=['PUT'])
 @require_auth
-def update_object_history(element_id: str):
-    """Update historical values for an object"""
+def update_object_history():
+    """Update historical values for one or more objects (bulk)"""
     try:
         data = request.get_json()
-        values = data.get('values', [])  # List of VQT objects
+        updates = data.get('updates', [])  # [{elementId, value: {value, quality, timestamp}}]
 
-        data_repo.update_object_history(element_id, values)
-        return success_response(None)
+        if not updates:
+            return error_response(400, 'Bad Request', 'updates is required')
 
-    except KeyError:
-        return error_response(404, f'ElementId not found: {element_id}')
+        results = []
+        for update in updates:
+            eid = update.get('elementId')
+            vqt = update.get('value', {})
+            try:
+                data_repo.update_object_history(eid, vqt)
+                results.append({"success": True, "elementId": eid, "result": None})
+            except KeyError:
+                results.append({"success": False, "elementId": eid,
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Element not found: {eid}"}})
+
+        return bulk_response(results)
+
     except Exception as e:
-        return error_response(500, 'Internal server error')
+        return error_response(500, 'Internal Server Error', 'Internal server error')
 ```
 
 ## Pattern 5: Authentication Middleware
@@ -386,16 +404,16 @@ def query_object_types():
     data = request.get_json()
     element_ids = data.get('elementIds', [])
     if not element_ids:
-        return error_response(400, 'elementIds is required')
+        return error_response(400, 'Bad Request', 'elementIds is required')
 
     results = []
     for eid in element_ids:
         obj_type = type_repo.get_object_type_by_id(eid)
         if obj_type:
-            results.append({"success": True, "elementId": eid, "result": obj_type, "error": None})
+            results.append({"success": True, "elementId": eid, "result": obj_type})
         else:
-            results.append({"success": False, "elementId": eid, "result": None,
-                             "error": {"code": 404, "message": f"Type not found: {eid}"}})
+            results.append({"success": False, "elementId": eid,
+                             "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Object type not found: {eid}"}})
     return bulk_response(results)
 
 @app.route('/relationshiptypes', methods=['GET'])
@@ -410,16 +428,16 @@ def query_relationship_types():
     data = request.get_json()
     element_ids = data.get('elementIds', [])
     if not element_ids:
-        return error_response(400, 'elementIds is required')
+        return error_response(400, 'Bad Request', 'elementIds is required')
 
     results = []
     for eid in element_ids:
         rel_type = type_repo.get_relationship_type_by_id(eid)
         if rel_type:
-            results.append({"success": True, "elementId": eid, "result": rel_type, "error": None})
+            results.append({"success": True, "elementId": eid, "result": rel_type})
         else:
-            results.append({"success": False, "elementId": eid, "result": None,
-                             "error": {"code": 404, "message": f"Relationship type not found: {eid}"}})
+            results.append({"success": False, "elementId": eid,
+                             "responseDetail": {"title": "Not Found", "status": 404, "detail": f"Relationship type not found: {eid}"}})
     return bulk_response(results)
 ```
 
@@ -454,10 +472,10 @@ class SubscriptionRepository:
         for sub_id in sub_ids:
             if sub_id in self.subscriptions:
                 del self.subscriptions[sub_id]
-                results.append({"success": True, "subscriptionId": sub_id, "error": None})
+                results.append({"success": True, "subscriptionId": sub_id, "result": None})
             else:
                 results.append({"success": False, "subscriptionId": sub_id,
-                                 "error": {"code": 404, "message": "Subscription not found"}})
+                                 "responseDetail": {"title": "Not Found", "status": 404, "detail": "Subscription not found"}})
         return results
 
     def register_items(self, sub_id: str, element_ids: List[str], max_depth: int = 1) -> bool:
@@ -477,14 +495,14 @@ class SubscriptionRepository:
         ]
         return True
 
-    def sync(self, sub_id: str, acknowledge_sequence: int) -> Optional[Dict]:
-        """Return new updates after acknowledge_sequence."""
+    def sync(self, sub_id: str, last_sequence_number: Optional[int]) -> Optional[Dict]:
+        """Return pending updates, acknowledging all up to last_sequence_number."""
         sub = self.subscriptions.get(sub_id)
         if not sub:
             return None
-        # Remove acknowledged items from queue
-        sub['queue'] = [u for u in sub['queue'] if u['sequenceNumber'] > acknowledge_sequence]
-        return {'updates': sub['queue']}
+        if last_sequence_number is not None:
+            sub['queue'] = [u for u in sub['queue'] if u['sequenceNumber'] > last_sequence_number]
+        return sub['queue']  # List of {sequenceNumber, updates: [...]}
 
 sub_repo = SubscriptionRepository()
 
@@ -492,8 +510,11 @@ sub_repo = SubscriptionRepository()
 @require_auth
 def create_subscription():
     data = request.get_json() or {}
+    client_id = data.get('clientId')
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     result = sub_repo.create_subscription(
-        client_id=data.get('clientId'),
+        client_id=client_id,
         display_name=data.get('displayName')
     )
     return success_response(result)
@@ -502,24 +523,42 @@ def create_subscription():
 @require_auth
 def list_subscriptions():
     data = request.get_json() or {}
-    sub_ids = data.get('subscriptionIds')  # Optional filter
-    subs = []
-    for sub in sub_repo.subscriptions.values():
-        if sub_ids is None or sub['subscriptionId'] in sub_ids:
-            subs.append({
-                'subscriptionId': sub['subscriptionId'],
-                'displayName': sub.get('displayName'),
-                'monitoredObjects': sub['monitoredObjects']
+    client_id = data.get('clientId')
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
+    sub_ids = data.get('subscriptionIds', [])
+    results = []
+    for sub_id in sub_ids:
+        sub = sub_repo.get_subscription(sub_id)
+        if sub and sub.get('clientId') == client_id:
+            results.append({
+                'success': True,
+                'subscriptionId': sub_id,
+                'result': {
+                    'subscriptionId': sub['subscriptionId'],
+                    'displayName': sub.get('displayName'),
+                    'monitoredObjects': sub['monitoredObjects']
+                }
             })
-    return success_response(subs)
+        else:
+            results.append({
+                'success': False,
+                'subscriptionId': sub_id,
+                'responseDetail': {'title': 'Not Found', 'status': 404, 'detail': f'Subscription not found: {sub_id}'}
+            })
+    top_success = all(r['success'] for r in results)
+    return jsonify({'success': top_success, 'results': results}), 200
 
 @app.route('/subscriptions/delete', methods=['POST'])
 @require_auth
 def delete_subscriptions():
     data = request.get_json()
+    client_id = data.get('clientId')
     sub_ids = data.get('subscriptionIds', [])
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_ids:
-        return error_response(400, 'subscriptionIds is required')
+        return error_response(400, 'Bad Request', 'subscriptionIds is required')
     results = sub_repo.delete_subscriptions(sub_ids)
     top_success = all(r['success'] for r in results)
     return jsonify({'success': top_success, 'results': results}), 200
@@ -528,47 +567,58 @@ def delete_subscriptions():
 @require_auth
 def register_monitored_items():
     data = request.get_json()
+    client_id = data.get('clientId')
     sub_id = data.get('subscriptionId')
     element_ids = data.get('elementIds', [])
     max_depth = data.get('maxDepth', 1)
 
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
-        return error_response(400, 'subscriptionId is required')
+        return error_response(400, 'Bad Request', 'subscriptionId is required')
     if not element_ids:
-        return error_response(400, 'elementIds is required')
+        return error_response(400, 'Bad Request', 'elementIds is required')
     if not sub_repo.register_items(sub_id, element_ids, max_depth):
-        return error_response(404, f'Subscription not found: {sub_id}')
+        return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
-    return success_response(None)
+    results = [{"success": True, "elementId": eid, "result": None} for eid in element_ids]
+    return bulk_response(results)
 
 @app.route('/subscriptions/unregister', methods=['POST'])
 @require_auth
 def unregister_monitored_items():
     data = request.get_json()
+    client_id = data.get('clientId')
     sub_id = data.get('subscriptionId')
     element_ids = data.get('elementIds', [])
 
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
-        return error_response(400, 'subscriptionId is required')
+        return error_response(400, 'Bad Request', 'subscriptionId is required')
     if not sub_repo.unregister_items(sub_id, element_ids):
-        return error_response(404, f'Subscription not found: {sub_id}')
+        return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
-    return success_response(None)
+    results = [{"success": True, "elementId": eid, "result": None} for eid in element_ids]
+    return bulk_response(results)
 
 @app.route('/subscriptions/sync', methods=['POST'])
 @require_auth
 def subscription_sync():
     """Poll for queued updates with sequence number acknowledgment."""
     data = request.get_json()
+    client_id = data.get('clientId')
     sub_id = data.get('subscriptionId')
-    acknowledge_sequence = data.get('acknowledgeSequence', 0)
+    last_sequence_number = data.get('lastSequenceNumber')  # Omitted on first call
 
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
-        return error_response(400, 'subscriptionId is required')
+        return error_response(400, 'Bad Request', 'subscriptionId is required')
 
-    result = sub_repo.sync(sub_id, acknowledge_sequence)
+    result = sub_repo.sync(sub_id, last_sequence_number)
     if result is None:
-        return error_response(404, f'Subscription not found: {sub_id}')
+        return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
     return success_response(result)
 
@@ -579,12 +629,15 @@ def subscription_stream():
     import json
 
     data = request.get_json()
+    client_id = data.get('clientId')
     sub_id = data.get('subscriptionId')
 
+    if not client_id:
+        return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
-        return error_response(400, 'subscriptionId is required')
+        return error_response(400, 'Bad Request', 'subscriptionId is required')
     if not sub_repo.get_subscription(sub_id):
-        return error_response(404, f'Subscription not found: {sub_id}')
+        return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
     def generate():
         # Your implementation to yield SSE events as values change
@@ -599,11 +652,11 @@ def subscription_stream():
 Return HTTP 501 for optional endpoints your server does not support. Do not return 404:
 
 ```python
-@app.route('/objects/history', methods=['POST'])
+@app.route('/objects/value', methods=['PUT'])
 @require_auth
-def get_object_history_not_implemented():
-    """History not supported on this server."""
-    return error_response(501, 'Historical queries are not supported by this server')
+def update_object_value_not_implemented():
+    """Value writes not supported on this server."""
+    return error_response(501, 'Not Implemented', 'Value writes are not supported by this server')
 ```
 
 ## Best Practices
@@ -615,11 +668,11 @@ Always use the standard error envelope — never return framework-default error 
 ```python
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({"success": False, "error": {"code": 404, "message": "Not found"}}), 404
+    return jsonify({"success": False, "responseDetail": {"title": "Not Found", "status": 404, "detail": "Not found"}}), 404
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({"success": False, "error": {"code": 500, "message": "Internal server error"}}), 500
+    return jsonify({"success": False, "responseDetail": {"title": "Internal Server Error", "status": 500, "detail": "Internal server error"}}), 500
 ```
 
 ### 2. Request Logging

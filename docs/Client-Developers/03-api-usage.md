@@ -162,12 +162,14 @@ const getRelatedObjects = async (token, elementIds, relationshipType = null) => 
 
 #### 4. Subscribing to Real-time Updates
 
-For applications requiring real-time data, use Server-Sent Events (SSE) subscriptions. Note that in the Beta API, subscription management uses flat POST endpoints — not per-subscription URLs.
+Subscription management uses flat POST endpoints with `clientId` and `subscriptionId` in the request body. Sync (reliable polling) is required on all servers; streaming (SSE) is optional.
 
 ```javascript
-// Create a subscription and stream updates
+const CLIENT_ID = 'my-app-001';  // Stable unique identifier for this client
+
+// Create a subscription and use sync for reliable polling
 const subscribeToObjects = async (token, elementIds, callback) => {
-  // Step 1: Create a subscription (optionally provide clientId and displayName)
+  // Step 1: Create a subscription — clientId is required
   const createResponse = await fetch('https://api.i3x.dev/v1/subscriptions', {
     method: 'POST',
     headers: {
@@ -175,7 +177,7 @@ const subscribeToObjects = async (token, elementIds, callback) => {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      clientId: 'my-app-001',
+      clientId: CLIENT_ID,
       displayName: 'Dashboard Monitor'
     })
   });
@@ -183,7 +185,7 @@ const subscribeToObjects = async (token, elementIds, callback) => {
   const createData = await createResponse.json();
   const subscriptionId = createData.result.subscriptionId;
 
-  // Step 2: Register objects to monitor (subscriptionId in body)
+  // Step 2: Register objects to monitor
   await fetch('https://api.i3x.dev/v1/subscriptions/register', {
     method: 'POST',
     headers: {
@@ -191,20 +193,21 @@ const subscribeToObjects = async (token, elementIds, callback) => {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
+      clientId: CLIENT_ID,
       subscriptionId: subscriptionId,
       elementIds: elementIds,
       maxDepth: 1
     })
   });
 
-  // Step 3: Open SSE stream for real-time updates (subscriptionId in body)
+  // Step 3: Open SSE stream for real-time updates (only if server advertises stream support)
   const streamResponse = await fetch('https://api.i3x.dev/v1/subscriptions/stream', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ subscriptionId: subscriptionId })
+    body: JSON.stringify({ clientId: CLIENT_ID, subscriptionId: subscriptionId })
   });
 
   // Process the SSE stream
@@ -230,23 +233,26 @@ const subscribeToObjects = async (token, elementIds, callback) => {
   return { subscriptionId };
 };
 
-// Alternative: Use sync endpoint for reliable polling instead of streaming
-// Sync uses sequence numbers to guarantee no data loss
-const syncSubscription = async (token, subscriptionId, lastSequence = 0) => {
+// Use sync endpoint for reliable polling — guaranteed no data loss via sequence numbers
+const syncSubscription = async (token, clientId, subscriptionId, lastSequenceNumber) => {
+  const body = { clientId, subscriptionId };
+  if (lastSequenceNumber !== undefined) {
+    body.lastSequenceNumber = lastSequenceNumber;  // Omit on first call only
+  }
   const response = await fetch('https://api.i3x.dev/v1/subscriptions/sync', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      subscriptionId: subscriptionId,
-      acknowledgeSequence: lastSequence  // Acknowledge previously received batch
-    })
+    body: JSON.stringify(body)
   });
+  // HTTP 206 means queue overflow — some updates were dropped
+  if (response.status === 206) {
+    console.warn('Subscription queue overflowed — some updates were dropped');
+  }
   const data = await response.json();
-  // data.result contains new updates with sequenceNumber
-  return data.result;
+  return data.result;  // Array of {sequenceNumber, updates: [...]} batches
 };
 
 // Deleting a subscription
@@ -257,26 +263,27 @@ const deleteSubscription = async (token, subscriptionId) => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ subscriptionIds: [subscriptionId] })
+    body: JSON.stringify({ clientId: CLIENT_ID, subscriptionIds: [subscriptionId] })
   });
 };
 ```
 
 #### 5. Handling API Responses
 
-All responses use a standard `{success, result}` or `{success, error}` envelope. Always check `success` before reading `result`:
+All responses use a standard `{success, result}` envelope. Errors use `{success, responseDetail: {title, status, detail}}` (RFC 9457). Always check `success` before reading `result`:
 
 ```javascript
 const handleResponse = async (response) => {
-  // HTTP 206 means partial content (depth limit reached) — not an error
+  // HTTP 206 means partial content (depth limit or queue overflow) — not a failure
   if (response.status === 206) {
-    console.warn('Partial results returned due to server depth limit');
+    console.warn('Partial results returned due to server limit');
   }
 
   const data = await response.json();
 
   if (!data.success) {
-    throw new Error(`API Error ${data.error.code}: ${data.error.message}`);
+    const rd = data.responseDetail;
+    throw new Error(`API Error ${rd.status}: ${rd.detail}`);
   }
 
   return data.result;
@@ -288,7 +295,7 @@ const handleBulkResponse = (data) => {
   const failed = data.results.filter(r => !r.success);
 
   if (failed.length > 0) {
-    console.warn(`${failed.length} items failed:`, failed.map(r => r.error));
+    console.warn(`${failed.length} items failed:`, failed.map(r => r.responseDetail));
   }
 
   return succeeded.map(r => ({ elementId: r.elementId, ...r.result }));

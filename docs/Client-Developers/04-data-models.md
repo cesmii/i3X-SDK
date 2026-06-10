@@ -143,9 +143,10 @@ All API responses use a standard envelope:
 ```json
 {
   "success": false,
-  "error": {
-    "code": 404,
-    "message": "ElementId not found"
+  "responseDetail": {
+    "title": "Not Found",
+    "status": 404,
+    "detail": "ElementId not found"
   }
 }
 ```
@@ -153,10 +154,10 @@ All API responses use a standard envelope:
 **Bulk operations** return per-item results in the same order as the request:
 ```json
 {
-  "success": true,
+  "success": false,
   "results": [
-    { "success": true, "elementId": "id-1", "result": { ... }, "error": null },
-    { "success": false, "elementId": "id-2", "result": null, "error": { "code": 404, "message": "Not found" } }
+    { "success": true, "elementId": "id-1", "result": { ... } },
+    { "success": false, "elementId": "id-2", "responseDetail": { "title": "Not Found", "status": 404, "detail": "Element not found: id-2" } }
   ]
 }
 ```
@@ -268,7 +269,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-Both fields are optional. `clientId` scopes the subscription to a specific client identifier.
+`clientId` is **required** and scopes the subscription to a specific client identifier. `displayName` is optional.
 
 #### CreateSubscriptionResponse
 
@@ -287,6 +288,7 @@ Both fields are optional. `clientId` scopes the subscription to a specific clien
 
 ```json
 {
+  "clientId": "my-app-instance-001",
   "subscriptionId": "sub-12345",
   "elementIds": ["urn:platform:object:12345", "urn:platform:object:12346"],
   "maxDepth": 1
@@ -295,13 +297,14 @@ Both fields are optional. `clientId` scopes the subscription to a specific clien
 
 #### SubscriptionSyncRequest (POST /subscriptions/sync)
 
-The sync endpoint uses sequence numbers to ensure no updates are lost. Clients acknowledge the last received batch:
+The sync endpoint uses sequence numbers to ensure no updates are lost. Clients acknowledge the last received batch via `lastSequenceNumber`. Omit `lastSequenceNumber` on the first call:
 
 ```json
 {
+  "clientId": "my-app-instance-001",
   "subscriptionId": "sub-12345",
-  "acknowledgeSequence": 42
+  "lastSequenceNumber": 42
 }
 ```
 
-The response returns new updates with monotonically increasing sequence numbers starting at 1. Each subscription has independent numbering.
+The response returns new updates with monotonically increasing sequence numbers starting at 1. Each subscription has independent numbering. HTTP 206 indicates queue overflow — some updates were dropped.

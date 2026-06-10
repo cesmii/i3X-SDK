@@ -4,7 +4,7 @@
 
 ### Unit Testing with Mock API
 
-Mock responses should reflect the Beta response envelope (`success`/`result`):
+Mock responses should reflect the standard response envelope (`success`/`result` for success; `success`/`responseDetail` for failure):
 
 ```javascript
 // mockApiClient.js

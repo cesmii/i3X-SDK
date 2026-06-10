@@ -6,7 +6,7 @@ sidebar_position: 1
 
 i3X is the **Industrial Information Interoperability eXchange** API, a vendor-agnostic REST API specification for accessing contextualized manufacturing data. If you're unfamiliar with i3X, please visit [www.i3x.dev](https://www.i3x.dev) for more information.
 
-> Note: This Guide has been updated for the v1 Beta Specification
+> Note: This Guide has been updated for the v1.0 Release
 
 ## The Basics
 
@@ -34,10 +34,17 @@ Namespace (URI)
 
 ### API Operations
 
+**Info** — Server discovery
+- `GET /info` — Server version, capabilities, and health check (no auth required)
+
 **Explore** — Discover the data model
 - `GET /namespaces` — List available namespaces
 - `GET /objecttypes` — Get type schemas (filterable by namespace)
-- `GET /objects` — List instances (filterable by TypeId)
+- `POST /objecttypes/query` — Bulk fetch object types by ElementId
+- `GET /relationshiptypes` — List relationship types (filterable by namespace)
+- `POST /relationshiptypes/query` — Bulk fetch relationship types by ElementId
+- `GET /objects` — List instances (filterable by TypeId or root status)
+- `POST /objects/list` — Bulk fetch objects by ElementId
 - `POST /objects/related` — Traverse relationships between objects
 
 **Query** — Read current and historical data
@@ -45,13 +52,17 @@ Namespace (URI)
 - `POST /objects/history` — Retrieve time-series data within a range
 
 **Update** — Write data back to the platform
-- `PUT /objects/{elementId}/value` — Update current value
-- `PUT /objects/{elementId}/history` — Modify historical records
+- `PUT /objects/value` — Update current values (bulk, with `updates` array)
+- `PUT /objects/history` — Modify historical records (bulk, with `updates` array)
 
 **Subscribe** — Real-time data streaming
-- `POST /subscriptions` — Create subscription (stream or sync)
-- `GET /subscriptions/{id}/stream` — Server-Sent Events for live updates
-- `POST /subscriptions/{id}/sync` — Pull queued updates for sync
+- `POST /subscriptions` — Create a subscription (requires `clientId`)
+- `POST /subscriptions/register` — Add objects to monitor
+- `POST /subscriptions/unregister` — Remove monitored objects
+- `POST /subscriptions/sync` — Pull queued updates with sequence acknowledgment
+- `POST /subscriptions/stream` — Server-Sent Events for live updates (optional)
+- `POST /subscriptions/list` — Retrieve subscription details
+- `POST /subscriptions/delete` — Remove subscriptions
 
 ### Relationships
 
@@ -62,7 +73,7 @@ and offers a third, optional kind if supported by the underlying platform.
 - **Composition** — How a complex object is constructed of component parts, each part having its own ObjectType (indicated with `isComposition`)
 - **Graph** — Any relationship other than the previous two (eg: CanFeed, MonitoredBy)
 
-For further exploration of relationships, please see the [Demo data Read Me](https://github.com/cesmii/i3X/tree/main/demo).
+For further exploration of relationships, please see [Understanding Relationships](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/UNDERSTANDING_RELATIONSHIPS.md).
 
 ## Step 1: View the API
 

@@ -36,18 +36,18 @@ All responses must use the standard envelope:
 ```json
 { "success": true, "result": <data> }
 ```
-or
+or (RFC 9457 Problem Details):
 ```json
-{ "success": false, "error": { "code": <http-status>, "message": "<description>" } }
+{ "success": false, "responseDetail": { "title": "Not Found", "status": 404, "detail": "<description>" } }
 ```
 
 Bulk operations return:
 ```json
 {
-  "success": true,
+  "success": false,
   "results": [
-    { "success": true, "elementId": "...", "result": <data>, "error": null },
-    { "success": false, "elementId": "...", "result": null, "error": { "code": 404, "message": "..." } }
+    { "success": true, "elementId": "...", "result": <data> },
+    { "success": false, "elementId": "...", "responseDetail": { "title": "Not Found", "status": 404, "detail": "Element not found: ..." } }
   ]
 }
 ```
@@ -59,13 +59,17 @@ The top-level `success` is false if any item fails. Results match request order 
 - **Performance**: Maintain performant responses, implementing pagination or truncation only where necessary
 - **Concurrent Connections**: Handle multiple simultaneous client connections
 
+### Required Capabilities (continued)
+
+- **Historical Data** (`capabilities.query.history`): MUST implement `POST /objects/history`. Servers without a historian MUST still implement the endpoint and return `GoodNoData`. Advertise actual historian availability via `capabilities.query.history`.
+- **Subscriptions**: MUST support base subscription management (create, list, delete, register, unregister) and `POST /subscriptions/sync`.
+
 ### Optional Capabilities
 
 Your implementation MAY support (advertise in `GET /info` capabilities):
 
-- **Historical Data** (`capabilities.query.history`): Query time-series data with time range filters via `POST /objects/history`
-- **Write Current Values** (`capabilities.update.current`): Accept `PUT /objects/{elementId}/value`
-- **Write Historical Values** (`capabilities.update.history`): Accept `PUT /objects/{elementId}/history`
+- **Write Current Values** (`capabilities.update.current`): Accept `PUT /objects/value` (bulk, with `updates` array)
+- **Write Historical Values** (`capabilities.update.history`): Accept `PUT /objects/history` (bulk, with `updates` array)
 - **Streaming Subscriptions** (`capabilities.subscribe.stream`): SSE streaming via `POST /subscriptions/stream`
 - **Graph Relationships**: Relationships beyond hierarchical and compositional
 
@@ -91,12 +95,11 @@ Explore Endpoints:
 
 Query Endpoints:
   POST   /objects/value                # Get current values for object(s)
-  POST   /objects/history              # Get historical values with time range  [optional]
-  GET    /objects/{elementId}/history  # Get historical values for one object   [optional]
+  POST   /objects/history              # Get historical values with time range  [required]
 
 Update Endpoints:
-  PUT    /objects/{elementId}/value    # Update object's current value          [optional]
-  PUT    /objects/{elementId}/history  # Update historical values               [optional]
+  PUT    /objects/value                # Update current values (bulk)           [optional]
+  PUT    /objects/history              # Update historical values (bulk)        [optional]
 
 Subscription Endpoints:
   POST   /subscriptions                # Create new subscription               [optional]
@@ -160,11 +163,12 @@ Note: Subscription management uses flat POST endpoints with `subscriptionId` in 
 - [ ] Include `quality` (one of: Good, GoodNoData, Bad, Uncertain) and `timestamp`
 - [ ] Support `maxDepth` for compositional hierarchies
 - [ ] Return HTTP 206 when depth limit is server-imposed
+- [ ] Get historical values (`POST /objects/history`) — return `GoodNoData` if no history available
 
 ### Required: Response Format
-- [ ] All responses wrapped in `{success, result}` or `{success, error}` envelope
-- [ ] Bulk responses use `{success, results: [{success, elementId, result, error}]}`
-- [ ] Error format: `{success: false, error: {code, message}}`
+- [ ] All responses wrapped in `{success, result}` envelope (success) or `{success, responseDetail: {title, status, detail}}` (failure)
+- [ ] Bulk responses use `{success, results: [{success, elementId, result}]}` with `responseDetail` on failed items
+- [ ] Error format follows RFC 9457: `{success: false, responseDetail: {title, status, detail}}`
 - [ ] Use correct HTTP status codes
 
 ### Required: Authentication
@@ -173,22 +177,21 @@ Note: Subscription management uses flat POST endpoints with `subscriptionId` in 
 - [ ] `GET /info` accessible without authentication
 - [ ] Return 401/403 for auth failures
 
-### Optional: Historical Data
-- [ ] Query historical values (`POST /objects/history`)
-- [ ] Query single-object history (`GET /objects/{elementId}/history`)
-- [ ] Update historical values (`PUT /objects/{elementId}/history`)
-
-### Optional: Value Updates
-- [ ] Update current value (`PUT /objects/{elementId}/value`)
-
-### Optional: Subscriptions
-- [ ] Create subscription (`POST /subscriptions`) with `clientId`, `displayName`
+### Required: Subscriptions
+- [ ] Create subscription (`POST /subscriptions`) — `clientId` required
 - [ ] List subscriptions (`POST /subscriptions/list`)
 - [ ] Delete subscriptions (`POST /subscriptions/delete`)
 - [ ] Register monitored objects (`POST /subscriptions/register`)
 - [ ] Unregister monitored objects (`POST /subscriptions/unregister`)
+- [ ] Sync with sequence numbers (`POST /subscriptions/sync`) using `lastSequenceNumber`
+- [ ] Return HTTP 206 on queue overflow with `responseDetail`
+
+### Optional: Value Updates
+- [ ] Update current values (`PUT /objects/value`) — bulk with `updates` array
+- [ ] Update historical values (`PUT /objects/history`) — bulk with `updates` array
+
+### Optional: Streaming
 - [ ] SSE streaming (`POST /subscriptions/stream`)
-- [ ] Sync with sequence numbers (`POST /subscriptions/sync`)
 
 ## Versioning Strategy
 

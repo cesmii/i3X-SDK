@@ -95,23 +95,23 @@ const streamObjectData = async (token, elementIds, callback) => {
   const createRes = await fetch('https://api.i3x.dev/v1/subscriptions', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ displayName: 'Stream Monitor' })
+    body: JSON.stringify({ clientId: 'my-app-001', displayName: 'Stream Monitor' })
   });
   const createData = await createRes.json();
   const subscriptionId = createData.result.subscriptionId;
 
-  // Register objects to monitor (subscriptionId in body)
+  // Register objects to monitor (clientId and subscriptionId in body)
   await fetch('https://api.i3x.dev/v1/subscriptions/register', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscriptionId, elementIds, maxDepth: 1 })
+    body: JSON.stringify({ clientId: createData.result.clientId, subscriptionId, elementIds, maxDepth: 1 })
   });
 
-  // Stream via SSE (subscriptionId in body)
+  // Stream via SSE (only if server advertises stream support)
   const streamRes = await fetch('https://api.i3x.dev/v1/subscriptions/stream', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscriptionId })
+    body: JSON.stringify({ clientId: createData.result.clientId, subscriptionId })
   });
 
   const reader = streamRes.body.getReader();
@@ -151,7 +151,7 @@ const failed = data.results.filter(r => !r.success);
 if (failed.length > 0) {
   console.warn('Some items failed:', failed.map(r => ({
     elementId: r.elementId,
-    error: r.error
+    detail: r.responseDetail?.detail
   })));
 }
 
