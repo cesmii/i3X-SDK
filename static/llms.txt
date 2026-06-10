@@ -1,0 +1,55 @@
+# i3X — Industrial Information Interoperability eXchange
+
+> i3X is an open, vendor-agnostic REST API specification for accessing contextualized manufacturing data, coordinated by CESMII, the Smart Manufacturing Institute. It defines a common interface — discovery, browsing, reading, writing, and subscribing — that applications can code against once and run on any compliant manufacturing platform (historians, MES, SCADA, UNS/MQTT brokers, OPC UA-backed systems). The specification reached its 1.0 release in 2026.
+
+Key facts for working with the API:
+
+- All endpoints are prefixed with `{baseURL}/v1`. The public demo server is at https://api.i3x.dev/v1 (interactive docs at https://api.i3x.dev/v1/docs).
+- Every response uses a `{success, result}` envelope; failures use `{success: false, responseDetail: {title, status, detail}}` (RFC 9457). Bulk endpoints return `{success, results: [{success, elementId, result | responseDetail}]}` in request order; top-level `success` is false if any item failed.
+- Data values are VQT structures: `{value, quality, timestamp}` with quality one of Good, GoodNoData, Bad, Uncertain. A null value requires quality Bad or GoodNoData.
+- The address space is Namespaces (scope types only), ObjectTypes (JSON Schema definitions), Objects (instances), and RelationshipTypes (always bidirectional via reverseOf). Hierarchy uses HasParent/HasChildren; composition uses HasComponent/ComponentOf and the `maxDepth` parameter (0 = infinite, 1 = none/default).
+- `GET /info` requires no authentication and advertises optional capabilities (query.history, update.current, update.history, subscribe.stream). Check it before using optional features.
+
+## Normative Specifications
+
+- [OpenAPI Specification](https://api.i3x.dev/v1/openapi.json): Authoritative wire format — endpoints, schemas, field names, and required/optional status
+- [Implementation Guide](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/IMPLEMENTATION_GUIDE.md): Normative requirements and semantics for servers and clients (RFC 2119 language)
+- [Understanding Relationships](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/UNDERSTANDING_RELATIONSHIPS.md): Hierarchical vs. composition vs. graph relationships, with serialized examples
+
+## Getting Started
+
+- [Quick Start](https://i3x.dev/sdk/quickstart): Key concepts, API operation list, and a hands-on tour using the demo server, i3X Explorer, and the Python client
+- [FAQ](https://i3x.dev/sdk/faq): What i3X is, how it relates to MQTT/Sparkplug and OPC UA, project status and governance
+- [Gotchas](https://i3x.dev/sdk/gotchas): Counterintuitive spec rules — maxDepth semantics, bulk success flags, sync acknowledgment, subscription TTL
+
+## Client Developer Guide
+
+- [Overview](https://i3x.dev/sdk/Client-Developers/overview): Purpose, architecture context, and prerequisites for application developers
+- [Authentication](https://i3x.dev/sdk/Client-Developers/authentication): Auth patterns; /info is always unauthenticated
+- [Core Concepts](https://i3x.dev/sdk/Client-Developers/core-concepts): Namespaces, ObjectTypes, Objects, RelationshipTypes, VQT, server capabilities
+- [API Usage](https://i3x.dev/sdk/Client-Developers/api-usage): Worked JavaScript examples for discovery, reading values/history, subscriptions, and response handling
+- [Data Models](https://i3x.dev/sdk/Client-Developers/data-models): Request/response shapes for every endpoint
+- [Best Practices](https://i3x.dev/sdk/Client-Developers/best-practices): Capability checks, error handling, caching, batching, HTTP 206 handling
+- [Integration](https://i3x.dev/sdk/Client-Developers/integration): React and Python client patterns
+- [Performance](https://i3x.dev/sdk/Client-Developers/performance): Batching, depth control, time-bounded history, sync vs. stream
+- [Troubleshooting](https://i3x.dev/sdk/Client-Developers/troubleshooting): Rate limits, 501s, partial results, subscription expiry, bulk failures
+- [Security](https://i3x.dev/sdk/Client-Developers/security): Credential handling and TLS validation
+- [Testing](https://i3x.dev/sdk/Client-Developers/testing): Mocking the response envelope and integration test patterns
+
+## Server Developer Guide
+
+- [Overview](https://i3x.dev/sdk/Server-Developers/overview): Target platforms and architectural assumptions for implementers
+- [Requirements](https://i3x.dev/sdk/Server-Developers/requirements): Required vs. optional capabilities, endpoint list, and a compliance checklist
+- [Data Models](https://i3x.dev/sdk/Server-Developers/data-models): Response shapes servers must produce, field by field
+- [Implementation Patterns](https://i3x.dev/sdk/Server-Developers/implementation-patterns): Python/Flask reference patterns for every endpoint group
+- [Documentation](https://i3x.dev/sdk/Server-Developers/documentation): Live OpenAPI and Swagger UI locations
+
+## Optional
+
+- [i3X Home](https://www.i3x.dev): Project overview — the problem, the solution, and core capabilities
+- [Position Paper](https://connect.cesmii.org/hubfs/i3X%20Positioning%20Document_February2026.pdf?hsLang=en): The case for a common manufacturing API (PDF)
+- [i3X on GitHub](https://github.com/cesmii/i3X): Spec source, demo server, MQTT adapter, issue tracker
+- [i3X Explorer](https://acetechnologies.net/i3X/): Free desktop client for browsing any compliant server
+- [Python client library](https://pypi.org/project/i3x-client/): pip-installable i3x-client package
+- [Interactive Visualization](https://www.i3x.dev/viz/): Visual walkthrough of the i3X architecture
+- [CESMII](https://www.cesmii.org): The Smart Manufacturing Institute coordinating the i3X working group

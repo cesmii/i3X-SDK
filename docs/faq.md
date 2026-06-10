@@ -34,7 +34,7 @@ Yes. The specification is open source under the MIT license. The GitHub reposito
 
 ### Can I use this with AI?
 
-Yes! The i3X API was designed to be easily understood by both humans and AI. Direct your AI to [read the Spec](https://api.i3x.dev/v1/openapi.json) and [Implementation Guide](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/IMPLEMENTATION_GUIDE.md) into its context.
+Yes! The i3X API was designed to be easily understood by both humans and AI. Direct your AI to [read the Spec](https://api.i3x.dev/v1/openapi.json) and [Implementation Guide](https://raw.githubusercontent.com/cesmii/i3X/refs/heads/1.0/spec/IMPLEMENTATION_GUIDE.md) into its context. This documentation site also publishes an [llms.txt](https://i3x.dev/sdk/llms.txt) index that points AI tools at the specs and guides in one step.
 
 ### Is i3X only for Python?
 
@@ -85,6 +85,7 @@ The specification comes in two forms: an OpenAPI Spec and an Implementation Guid
 ### Where can I find more information?
 
 - **Quick Start**: [quickstart.md](quickstart.md)
+- **Gotchas**: [gotchas.md](gotchas.md)
 - **i3X Home**: [https://www.i3x.dev](https://www.i3x.dev)
 - **GitHub**: [https://github.com/cesmii/i3x](https://github.com/cesmii/i3x)
 - **CESMII**: [https://www.cesmii.org](https://www.cesmii.org)
