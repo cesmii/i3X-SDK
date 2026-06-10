@@ -22,6 +22,12 @@ i3X reached **1.0 release** (Q2 2026). The specification is stable and normative
 
 The public demo server at [https://api.i3x.dev/v1/docs](https://api.i3x.dev/v1/docs) is available for testing.
 
+### How can I tell if an implementation is conformant?
+
+The 1.0 release includes a conformance test harness that can be run on any public endpoint, or downloaded an run on a private network.
+
+Visit [https://www.i3x.dev/conformance](https://www.i3x.dev/conformance) to test or download.
+
 ### What problem does i3X solve?
 
 Manufacturing software stacks are fragmented. A typical facility runs historians, MES systems, quality platforms, and maintenance tools from different vendors — each with its own proprietary API. This forces application developers to write custom integrations for every platform combination, making apps non-portable and driving up integration costs for everyone.
