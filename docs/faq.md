@@ -14,7 +14,7 @@ Think of it as doing for industrial software what web browsers did for the inter
 
 ### Who created i3X?
 
-i3X is coordinated by [CESMII](https://www.cesmii.org), a U.S. Department of Energy-funded smart manufacturing institute. The working group includes HighByte, GE Appliances, Georgia-Pacific, Rockwell Automation, Inductive Automation, AWS, Microsoft, Siemens, and ThinkIQ, among others.
+i3X is coordinated by [CESMII](https://www.cesmii.org), a U.S. Department of Energy-funded smart manufacturing institute. The working group includes AWS, GE Appliances, HighByte, Inductive Automation, Microsoft, Rockwell Automation, Siemens, and ThinkIQ, among others.
 
 ### What is the current status of i3X?
 
@@ -56,7 +56,7 @@ i3X aims to provide a simplified interface that can be bound to an OPC UA server
 
 ### Should I implement i3X on a PLC or Edge device?
 
-Probably not. The purpose of i3X is to standardize the programmers interface for contextualized information. This means, raw data that has been shaped into a pre-defined repeatable model, stored as instance objects, with those instances related to each other hierarchically and graphically, usually with history. While some PLCs are very sophisticated, their context is usually fairly focused on the things they're controlling (by design!) The first place you can really start to get value out of an i3X implementation is at the HMI/SCADA level (and on up from there!)
+Probably not. The purpose of i3X is to standardize the programmers interface for *contextualized* information. This means, raw data that has been shaped into a pre-defined repeatable model, stored as instance objects, with those instances related to each other hierarchically and graphically, usually with history. While some PLCs are very sophisticated, their context is usually fairly focused on the things they're controlling (by design!) Often, the first place you can really start to get value out of an i3X implementation is at the HMI/SCADA level (and on up from there!) That said, there *are* PLC or Edge implementations being developed, and the Spec is open -- nothing prevents you from exploring this option!
 
 ### Does i3X support multiple inheritance?
 
@@ -64,7 +64,7 @@ By design, no. Multiple inheritance can lead to the [diamond problem](https://en
 
 ### How does i3X support Class composition?
 
-For the initial release, the Working Group chose to simplify composition representation to the *instance object* level. This means that an object may be made up of Types from different Namespaces. However, the API does *not* support representing composition at the type level. Types return in a query must be simplified to a flat list within a single namespace.
+For the initial release, the Working Group chose to simplify composition representation to the *instance object* level. This means that an object may be made up of Types from different Namespaces. However, the API does **not** support representing composition at the *type* level in 1.0. Types returned in a query must be simplified to a flat list within a single namespace.
 
 Importantly, the underlying platform is still free to store and relate type definitions of any level of complexity or composition, but when responding to a query, must simplify results.
 
