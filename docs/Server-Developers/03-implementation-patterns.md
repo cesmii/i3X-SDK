@@ -445,14 +445,20 @@ def query_relationship_types():
 
 Note: All subscription management uses flat POST endpoints with `subscriptionId` in the request body — not per-subscription URL paths.
 
+`clientId` is required on every subscription endpoint (400 Bad Request when missing), and every operation is scoped to it: a subscription owned by a different client returns the same 404 as a nonexistent one, so subscription IDs cannot be probed across clients.
+
 ```python
 import uuid
 
 class SubscriptionRepository:
+    """All lookups are keyed by (clientId, subscriptionId). A subscription owned
+    by a different client is treated exactly like a nonexistent one (404), so
+    clients cannot probe for other clients' subscription IDs."""
+
     def __init__(self):
         self.subscriptions = {}
 
-    def create_subscription(self, client_id: Optional[str], display_name: Optional[str]) -> Dict:
+    def create_subscription(self, client_id: str, display_name: Optional[str]) -> Dict:
         sub_id = str(uuid.uuid4())
         self.subscriptions[sub_id] = {
             'subscriptionId': sub_id,
@@ -464,13 +470,14 @@ class SubscriptionRepository:
         }
         return {'subscriptionId': sub_id, 'clientId': client_id, 'displayName': display_name}
 
-    def get_subscription(self, sub_id: str) -> Optional[Dict]:
-        return self.subscriptions.get(sub_id)
+    def get_subscription(self, client_id: str, sub_id: str) -> Optional[Dict]:
+        sub = self.subscriptions.get(sub_id)
+        return sub if sub and sub['clientId'] == client_id else None
 
-    def delete_subscriptions(self, sub_ids: List[str]) -> List[Dict]:
+    def delete_subscriptions(self, client_id: str, sub_ids: List[str]) -> List[Dict]:
         results = []
         for sub_id in sub_ids:
-            if sub_id in self.subscriptions:
+            if self.get_subscription(client_id, sub_id):
                 del self.subscriptions[sub_id]
                 results.append({"success": True, "subscriptionId": sub_id, "result": None})
             else:
@@ -478,16 +485,16 @@ class SubscriptionRepository:
                                  "responseDetail": {"title": "Not Found", "status": 404, "detail": "Subscription not found"}})
         return results
 
-    def register_items(self, sub_id: str, element_ids: List[str], max_depth: int = 1) -> bool:
-        sub = self.subscriptions.get(sub_id)
+    def register_items(self, client_id: str, sub_id: str, element_ids: List[str], max_depth: int = 1) -> bool:
+        sub = self.get_subscription(client_id, sub_id)
         if not sub:
             return False
         for eid in element_ids:
             sub['monitoredObjects'].append({'elementId': eid, 'maxDepth': max_depth})
         return True
 
-    def unregister_items(self, sub_id: str, element_ids: List[str]) -> bool:
-        sub = self.subscriptions.get(sub_id)
+    def unregister_items(self, client_id: str, sub_id: str, element_ids: List[str]) -> bool:
+        sub = self.get_subscription(client_id, sub_id)
         if not sub:
             return False
         sub['monitoredObjects'] = [
@@ -495,14 +502,14 @@ class SubscriptionRepository:
         ]
         return True
 
-    def sync(self, sub_id: str, last_sequence_number: Optional[int]) -> Optional[Dict]:
+    def sync(self, client_id: str, sub_id: str, last_sequence_number: Optional[int]) -> Optional[Dict]:
         """Return pending updates, acknowledging all up to last_sequence_number.
 
         Spec notes: -1 acknowledges (clears) the entire queue; an omitted or
         invalid last_sequence_number MUST NOT clear the queue. Servers MUST
         also return an error if the subscription has an open SSE stream.
         """
-        sub = self.subscriptions.get(sub_id)
+        sub = self.get_subscription(client_id, sub_id)
         if not sub:
             return None
         if last_sequence_number == -1:
@@ -536,8 +543,8 @@ def list_subscriptions():
     sub_ids = data.get('subscriptionIds', [])
     results = []
     for sub_id in sub_ids:
-        sub = sub_repo.get_subscription(sub_id)
-        if sub and sub.get('clientId') == client_id:
+        sub = sub_repo.get_subscription(client_id, sub_id)
+        if sub:
             results.append({
                 'success': True,
                 'subscriptionId': sub_id,
@@ -566,7 +573,7 @@ def delete_subscriptions():
         return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_ids:
         return error_response(400, 'Bad Request', 'subscriptionIds is required')
-    results = sub_repo.delete_subscriptions(sub_ids)
+    results = sub_repo.delete_subscriptions(client_id, sub_ids)
     top_success = all(r['success'] for r in results)
     return jsonify({'success': top_success, 'results': results}), 200
 
@@ -585,7 +592,7 @@ def register_monitored_items():
         return error_response(400, 'Bad Request', 'subscriptionId is required')
     if not element_ids:
         return error_response(400, 'Bad Request', 'elementIds is required')
-    if not sub_repo.register_items(sub_id, element_ids, max_depth):
+    if not sub_repo.register_items(client_id, sub_id, element_ids, max_depth):
         return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
     results = [{"success": True, "elementId": eid, "result": None} for eid in element_ids]
@@ -603,7 +610,7 @@ def unregister_monitored_items():
         return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
         return error_response(400, 'Bad Request', 'subscriptionId is required')
-    if not sub_repo.unregister_items(sub_id, element_ids):
+    if not sub_repo.unregister_items(client_id, sub_id, element_ids):
         return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
     results = [{"success": True, "elementId": eid, "result": None} for eid in element_ids]
@@ -623,7 +630,7 @@ def subscription_sync():
     if not sub_id:
         return error_response(400, 'Bad Request', 'subscriptionId is required')
 
-    result = sub_repo.sync(sub_id, last_sequence_number)
+    result = sub_repo.sync(client_id, sub_id, last_sequence_number)
     if result is None:
         return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
@@ -643,7 +650,7 @@ def subscription_stream():
         return error_response(400, 'Bad Request', 'clientId is required')
     if not sub_id:
         return error_response(400, 'Bad Request', 'subscriptionId is required')
-    if not sub_repo.get_subscription(sub_id):
+    if not sub_repo.get_subscription(client_id, sub_id):
         return error_response(404, 'Not Found', f'Subscription not found: {sub_id}')
 
     def generate():
