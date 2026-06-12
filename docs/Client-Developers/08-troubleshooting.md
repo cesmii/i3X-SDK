@@ -1,8 +1,6 @@
 # Troubleshooting Common Issues
 
-## Troubleshooting Common Issues
-
-### Issue: Rate Limiting
+## Rate Limiting
 
 **Symptoms**: 429 Too Many Requests responses
 
@@ -27,7 +25,7 @@ const fetchWithBackoff = async (url, options, maxRetries = 3) => {
 };
 ```
 
-### Issue: Feature Not Supported (HTTP 501)
+## Feature Not Supported (HTTP 501)
 
 **Symptoms**: HTTP 501 Not Implemented response
 
@@ -42,13 +40,13 @@ if (!info.result.capabilities.query.history) {
 }
 ```
 
-### Issue: Partial Results (HTTP 206)
+## Partial Results (HTTP 206)
 
 **Symptoms**: HTTP 206 Partial Content response from value or history queries
 
 **Explanation**: The server reached its internal depth limit before completing the requested `maxDepth`. This is not an error — the response contains valid data, just not as deep as requested.
 
-**Solution**: Process partial results normally. To retrieve the missing composition data, issue follow-up requests targeting the specific `elementId`s that were not fully expanded:
+**Solution**: Process partial results normally. To retrieve the missing composition data, issue follow-up requests targeting the specific `elementIds` that were not fully expanded:
 
 ```javascript
 const response = await fetch('https://api.i3x.dev/v1/objects/value', {
@@ -65,7 +63,7 @@ const data = await response.json();
 // data.results contains the partial results — still process them
 ```
 
-### Issue: Large Data Set Handling
+## Large Data Set Handling
 
 **Solution**: Use time-bounded queries and subscriptions for streaming
 
@@ -137,7 +135,7 @@ const streamObjectData = async (token, elementIds, callback) => {
 };
 ```
 
-### Issue: Subscription Returns 404 on Sync or Stream
+## Subscription Returns 404 on Sync or Stream
 
 **Symptoms**: A previously working subscription suddenly returns 404 Not Found from `/subscriptions/sync` or `/subscriptions/stream`
 
@@ -154,7 +152,7 @@ if (syncResponse.status === 404) {
 }
 ```
 
-### Issue: Unexpected `success: false` in Bulk Results
+## Unexpected `success: false` in Bulk Results
 
 **Symptoms**: Top-level `success` is false even though some items succeeded
 

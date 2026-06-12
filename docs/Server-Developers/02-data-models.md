@@ -16,7 +16,7 @@ Objects are serialized in JSON format. The base `ObjectInstanceResponse` schema:
 }
 ```
 
-When `includeMetadata=true` is requested, populate the `metadata` field with relationship information:
+When `includeMetadata=true` is requested, populate the `metadata` field. This example sets `isExtended: true` so `schemaExtensions` is populated:
 
 ```json
 {
@@ -25,11 +25,20 @@ When `includeMetadata=true` is requested, populate the `metadata` field with rel
   "typeElementId": "urn:platform:type:Equipment",
   "parentId": "urn:platform:object:building-a",
   "isComposition": true,
-  "isExtended": false,
+  "isExtended": true,
   "metadata": {
+    "description": "Primary packaging line for Building A",
+    "typeNamespaceUri": "urn:platform:namespace:production",
+    "sourceTypeId": "EquipmentClass",
     "relationships": {
       "HasComponent": ["urn:platform:object:conveyor-1", "urn:platform:object:sealer-1"],
       "References": ["urn:platform:object:operator-station-1"]
+    },
+    "schemaExtensions": {
+      "serialNumber": { "type": "string" }
+    },
+    "system": {
+      "opcua.nodeId": "ns=2;i=1001"
     }
   }
 }
@@ -43,14 +52,25 @@ When `includeMetadata=true` is requested, populate the `metadata` field with rel
 - **displayName** (string): Human-readable name for UI presentation
 - **typeElementId** (string): ElementId of the object's type definition
 - **isComposition** (boolean): Whether this object encapsulates child component objects (HasComponent relationship)
-- **isExtended** (boolean, default: false): Whether this object carries attributes beyond its type schema
+- **isExtended** (boolean): Whether the object's value carries attributes beyond its type schema. Always present; `true` when extra attributes exist (detailed in `metadata.schemaExtensions`)
 
 ### Optional Fields
 
 - **parentId** (string | null): ElementId of the parent object; null for root objects
-- **metadata** (object | null): Full relationship metadata; only populated when `includeMetadata=true`
+- **metadata** (object | null): Full metadata; only populated when `includeMetadata=true`. See [Metadata Sub-Fields](#metadata-sub-fields) below.
 
 **Note:** Objects do not carry a `namespaceUri`. Object instances exist in the server's implicit address space. Namespace is a property of types, not instances.
+
+### Metadata Sub-Fields
+
+The `metadata` field is populated only when `includeMetadata=true`. When you populate it, `typeNamespaceUri` and `sourceTypeId` are required; emit the remaining fields only when you have a value.
+
+- **description** (string, optional): Human-readable description, beyond what `displayName` conveys.
+- **typeNamespaceUri** (string, required): Namespace the object's ObjectType belongs to — an instance's type may come from any namespace, so this makes its provenance explicit.
+- **sourceTypeId** (string, required): The type's identifier within its source namespace, for correlating back to the originating definition. Distinct from `typeElementId` (the i3X id).
+- **relationships** (object, optional): Outgoing relationship edges keyed by relationship type — `elementId`s only. Use `/objects/related` for full records.
+- **schemaExtensions** (object, optional): Present only when `isExtended=true`; the attributes beyond the type schema, keyed by name with inferred JSON Schema fragments.
+- **system** (object, optional): Opaque vendor/source-system passthrough (e.g., OPC UA `nodeId`, `nodeClass`); no key is normative.
 
 ## ObjectType Representation
 

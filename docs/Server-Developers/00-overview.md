@@ -1,8 +1,6 @@
 # Server Implementation Guide - Overview
 
-## Introduction
-
-This guide is provided without warranty for platform vendors and server implementers who want to expose their manufacturing information systems through the i3X API. By implementing this standardized interface, you enable application developers to build portable applications that work across multiple platforms.
+This guide is provided without warranty for platform vendors and server implementers who want to expose their manufacturing information systems through the i3X API. By implementing this common interface, you enable application developers to build portable applications that work across multiple platforms.
 
 > **Note:** These documents are a companion to the formal [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md). If there are differences between the two, the Implementation Guide should be considered authoritative; please report any errors you observe.
 
@@ -67,9 +65,9 @@ The API assumes that your platform (or combination of platforms):
 2. Has unified the information model and Namespaces across data stores
 3. Can map internal data structures to the API's object model in a Type-safe fashion
 4. Supports time-series data storage and retrieval
-5. Support at least hierarchical relationships between well Typed objects
-5. Implements appropriate security and access control
-6. Can handle concurrent client connections
+5. Supports at least hierarchical relationships between well-Typed objects
+6. Implements appropriate security and access control
+7. Can handle concurrent client connections
 
 ## Documentation Structure
 

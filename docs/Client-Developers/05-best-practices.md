@@ -1,8 +1,6 @@
-# Best Practices for Client Development
+# Best Practices
 
-## Best Practices for Client Development
-
-### 1. Check Capabilities First
+## Check Capabilities First
 
 Always call `GET /info` before using optional features. This endpoint requires no authentication:
 
@@ -21,7 +19,7 @@ const initClient = async (baseUrl, token) => {
 };
 ```
 
-### 2. Error Handling
+## Error Handling
 
 All responses use a `{success, result}` envelope. Implement robust error handling that checks this:
 
@@ -60,7 +58,7 @@ const safeApiCall = async (url, options = {}) => {
 };
 ```
 
-### 3. Caching Strategy
+## Caching Strategy
 
 Implement intelligent caching to reduce API load:
 
@@ -93,7 +91,7 @@ class ApiCache {
 }
 ```
 
-### 4. Rate Limiting Awareness
+## Rate Limiting Awareness
 
 Respect API rate limits to ensure service availability:
 
@@ -120,7 +118,7 @@ class RateLimiter {
 }
 ```
 
-### 5. Efficient Batch Data Retrieval
+## Efficient Batch Data Retrieval
 
 When retrieving data for multiple objects, use batch endpoints with `elementIds` arrays:
 
@@ -157,7 +155,7 @@ const getObjectsByType = async (token, typeElementId) => {
 };
 ```
 
-### 6. Handling Partial Results (HTTP 206)
+## Handling Partial Results (HTTP 206)
 
 When querying with `maxDepth`, the server may return HTTP 206 if it reaches its own depth limit. This is not an error — treat it as a partial success:
 

@@ -3,6 +3,6 @@
   "position": 4,
   "link": {
     "type": "generated-index",
-    "description": "Server Developer Documentation."
+    "description": "Guidance for platform vendors and server implementers exposing their manufacturing systems through the i3X API — required and optional capabilities, data models, reference implementation patterns, and a compliance checklist."
   }
 }
