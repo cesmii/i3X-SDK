@@ -1,10 +1,6 @@
 # API Patterns and Usage
 
-## API Patterns and Usage
-
-### Common Operations
-
-#### 0. Checking Server Capabilities
+## Checking Server Capabilities
 
 Before making requests, discover what the server supports. `GET /info` requires no authentication:
 
@@ -27,7 +23,7 @@ if (info.capabilities.subscribe.stream) {
 }
 ```
 
-#### 1. Discovering Available Objects
+## Discovering Available Objects
 
 Query the API to discover what manufacturing objects are available:
 
@@ -70,7 +66,7 @@ const getObjectTypes = async (token, namespaceUri = null) => {
 };
 ```
 
-#### 2. Reading Object Values
+## Reading Object Values
 
 Retrieve current values from manufacturing objects using POST. Note that the `elementIds` field is always an array:
 
@@ -119,7 +115,7 @@ const readObjectHistory = async (token, elementIds, options = {}) => {
 };
 ```
 
-#### 3. Querying Multiple Objects
+## Querying Multiple Objects
 
 Retrieve multiple objects by their element IDs:
 
@@ -160,7 +156,7 @@ const getRelatedObjects = async (token, elementIds, relationshipType = null) => 
 };
 ```
 
-#### 4. Subscribing to Real-time Updates
+## Subscribing to Real-time Updates
 
 Subscription management uses flat POST endpoints with `clientId` and `subscriptionId` in the request body. Sync (reliable polling) is required on all servers; streaming (SSE) is optional.
 
@@ -273,7 +269,7 @@ const deleteSubscription = async (token, subscriptionId) => {
 };
 ```
 
-#### 5. Handling API Responses
+## Handling API Responses
 
 All responses use a standard `{success, result}` envelope. Errors use `{success, responseDetail: {title, status, detail}}` (RFC 9457). Always check `success` before reading `result`:
 

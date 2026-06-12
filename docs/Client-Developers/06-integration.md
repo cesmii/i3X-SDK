@@ -1,8 +1,6 @@
 # Integration Patterns
 
-## Integration Patterns
-
-### React/JavaScript Applications
+## React/JavaScript Applications
 
 ```javascript
 import { useEffect, useState } from 'react';
@@ -46,7 +44,7 @@ const useManufacturingData = (elementId) => {
 };
 ```
 
-### Python Applications
+## Python Applications
 
 ```python
 import requests

@@ -2,7 +2,7 @@
 
 ## Implementation Requirements
 
-### Core Capabilities
+### Required Capabilities
 
 Your implementation MUST support:
 
@@ -59,10 +59,14 @@ The top-level `success` is false if any item fails. Results match request order 
 - **Performance**: Maintain performant responses, implementing pagination or truncation only where necessary
 - **Concurrent Connections**: Handle multiple simultaneous client connections
 
-### Required Capabilities (continued)
+#### 7. Historical Data
 
-- **Historical Data** (`capabilities.query.history`): MUST implement `POST /objects/history`. Servers without a historian MUST still implement the endpoint and return `GoodNoData`. Advertise actual historian availability via `capabilities.query.history`.
-- **Subscriptions**: MUST support base subscription management (create, list, delete, register, unregister) and `POST /subscriptions/sync`.
+- **History Endpoint** (`capabilities.query.history`): MUST implement `POST /objects/history`. Servers without a historian MUST still implement the endpoint and return `GoodNoData`. Advertise actual historian availability via `capabilities.query.history`.
+
+#### 8. Subscriptions
+
+- **Base Subscription Management**: MUST support create, list, delete, register, and unregister
+- **Reliable Sync**: MUST support `POST /subscriptions/sync` with sequence-number acknowledgment
 
 ### Optional Capabilities
 
@@ -81,21 +85,21 @@ Your implementation MAY support (advertise in `GET /info` capabilities):
 Base URL: https://your-platform.example.com/v1/
 
 Info:
-  GET    /info                         # Server info and capabilities (no auth)
+  GET    /info                         # Server info and capabilities (no auth)  [required]
 
 Explore Endpoints:
-  GET    /namespaces                   # List all namespaces
-  GET    /objecttypes                  # List object type schemas
-  POST   /objecttypes/query            # Query types by elementId(s)
-  GET    /relationshiptypes            # List relationship types
-  POST   /relationshiptypes/query      # Query relationship types by elementId(s)
-  GET    /objects                      # List all objects
-  POST   /objects/list                 # Get objects by elementId(s)
-  POST   /objects/related              # Get related objects
+  GET    /namespaces                   # List all namespaces                     [required]
+  GET    /objecttypes                  # List object type schemas                [required]
+  POST   /objecttypes/query            # Query types by elementId(s)             [required]
+  GET    /relationshiptypes            # List relationship types                 [required]
+  POST   /relationshiptypes/query      # Query relationship types by elementId(s) [required]
+  GET    /objects                      # List all objects                        [required]
+  POST   /objects/list                 # Get objects by elementId(s)             [required]
+  POST   /objects/related              # Get related objects                     [required]
 
 Query Endpoints:
-  POST   /objects/value                # Get current values for object(s)
-  POST   /objects/history              # Get historical values with time range  [required]
+  POST   /objects/value                # Get current values for object(s)        [required]
+  POST   /objects/history              # Get historical values with time range   [required]
 
 Update Endpoints:
   PUT    /objects/value                # Update current values (bulk)           [optional]
@@ -124,7 +128,9 @@ Note: Subscription management uses flat POST endpoints with `subscriptionId` in 
 ```
 2xx Success:
   200 OK              - Successful request
-  206 Partial Content - Depth limit reached; partial results returned
+  206 Partial Content - Server-imposed limit reached (composition depth on value/history,
+                        or subscription queue overflow on sync); partial results returned
+                        with a top-level responseDetail
 
 4xx Client Errors:
   400 Bad Request     - Invalid request syntax or parameters

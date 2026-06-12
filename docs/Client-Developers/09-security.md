@@ -1,8 +1,6 @@
 # Security Considerations
 
-## Security Considerations
-
-### 1. Protect Credentials
+## Protect Credentials
 
 Never hardcode credentials in your application:
 
@@ -20,7 +18,7 @@ const credentials = {
 };
 ```
 
-### 2. Validate Server Certificates
+## Validate Server Certificates
 
 Always use HTTPS in production. TLS 1.2 or higher is recommended. Self-signed certificates are permitted in development environments only.
 
@@ -37,7 +35,7 @@ const agent = new https.Agent({
 fetch(url, { agent });
 ```
 
-### 3. Sanitize Input Data
+## Sanitize Input Data
 
 When sending data to the API, sanitize and validate inputs:
 

@@ -26,6 +26,9 @@
     "@docusaurus/module-type-aliases": "3.9.2",
     "@docusaurus/types": "3.9.2"
   },
+  "overrides": {
+    "webpack": "5.97.1"
+  },
   "browserslist": {
     "production": [
       ">0.5%",

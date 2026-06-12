@@ -3,6 +3,6 @@
   "position": 3,
   "link": {
     "type": "generated-index",
-    "description": "Client Developer Documentation."
+    "description": "Guidance for application developers building clients that consume the i3X API — authentication, core concepts, API usage, data models, and best practices for analytics, visualization, notification, and ML applications."
   }
 }

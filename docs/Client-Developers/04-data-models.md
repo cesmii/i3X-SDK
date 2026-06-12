@@ -1,8 +1,6 @@
-# Data Model Understanding
+# Data Models
 
-## Data Model Understanding
-
-### Object Instance Structure
+## Object Instance Structure
 
 Objects in the i3X API follow this structure:
 
@@ -17,7 +15,22 @@ Objects in the i3X API follow this structure:
 }
 ```
 
-Full metadata (including relationship information) is available when requesting with `includeMetadata=true`:
+**Always present:**
+
+- `elementId`: Unique string identifier with no leading/trailing whitespace or non-printable characters
+- `displayName`: Human-readable name for UI presentation
+- `typeElementId`: ElementId of the object's type definition
+- `isComposition`: `true` when this object encapsulates child component objects (HasComponent relationship)
+- `isExtended`: `true` when the object's value carries attributes beyond its type schema (detailed in `metadata.schemaExtensions`)
+
+**Conditionally present:**
+
+- `parentId`: The parent object's elementId, or `null` for root objects
+- `metadata`: Returned only when you request `includeMetadata=true` (see below)
+
+Objects do not carry a `namespaceUri` — instances live in the server's implicit address space, and namespace is a property of types, not instances.
+
+Full metadata is available when requesting with `includeMetadata=true`. The example below sets `isExtended: true` so `schemaExtensions` is populated:
 
 ```json
 {
@@ -26,17 +39,35 @@ Full metadata (including relationship information) is available when requesting 
   "typeElementId": "object-type-element-id",
   "parentId": "parent-object-id-or-null",
   "isComposition": true,
-  "isExtended": false,
+  "isExtended": true,
   "metadata": {
+    "description": "Optional human-readable description",
+    "typeNamespaceUri": "urn:platform:namespace:production",
+    "sourceTypeId": "EquipmentClass",
     "relationships": {
       "HasComponent": ["child-element-id-1", "child-element-id-2"],
       "References": ["related-element-id"]
+    },
+    "schemaExtensions": {
+      "serialNumber": { "type": "string" }
+    },
+    "system": {
+      "opcua.nodeId": "ns=2;i=1001"
     }
   }
 }
 ```
 
-### ObjectType Structure
+You only receive `metadata` when you request `includeMetadata=true`. When you do, `typeNamespaceUri` and `sourceTypeId` are always included; the rest appear only when the server has a value for them.
+
+- `typeNamespaceUri`: Namespace the object's ObjectType belongs to — an instance's type may come from any namespace, so this makes its provenance explicit.
+- `sourceTypeId`: The type's identifier within its source namespace, for correlating back to the originating definition. Distinct from `typeElementId` (the i3X id).
+- `description` (optional): Human-readable description, beyond what `displayName` conveys.
+- `relationships` (optional): Outgoing relationship edges keyed by relationship type — `elementId`s only. Use `/objects/related` for full records.
+- `schemaExtensions` (optional): Returned when `isExtended=true`; the attributes beyond the type schema, keyed by name with inferred JSON Schema fragments.
+- `system` (optional): Opaque vendor/source-system passthrough (e.g., OPC UA `nodeId`, `nodeClass`); no key is normative.
+
+## ObjectType Structure
 
 ObjectTypes define the schema for objects:
 
@@ -67,7 +98,7 @@ Fields:
 - `schema` (required): JSON Schema definition
 - `related` (optional): Related type metadata
 
-### Value Response Structure
+## Value Response Structure
 
 Current value responses are returned as a bulk result array. Each item in the results array has:
 
@@ -110,7 +141,7 @@ For composition objects queried with `maxDepth > 1`, child component values appe
 }
 ```
 
-### Historical Value Response
+## Historical Value Response
 
 Historical values per object:
 
@@ -127,7 +158,7 @@ Historical values per object:
 }
 ```
 
-### Standard Response Envelope
+## Standard Response Envelope
 
 All API responses use a standard envelope:
 
@@ -164,7 +195,7 @@ All API responses use a standard envelope:
 
 The top-level `success` is false if any item fails.
 
-### Data Quality Indicators
+## Data Quality Indicators
 
 i3X uses four standard quality states:
 
@@ -177,9 +208,9 @@ i3X uses four standard quality states:
 
 When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 
-### Value Request/Response
+## Value Request/Response
 
-#### GetObjectValueRequest (POST /objects/value)
+### GetObjectValueRequest (POST /objects/value)
 
 ```json
 {
@@ -197,7 +228,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 
 **Note:** If the server reaches its depth limit before `maxDepth`, it returns HTTP 206 (Partial Content) rather than silently returning incomplete data.
 
-#### GetObjectHistoryRequest (POST /objects/history)
+### GetObjectHistoryRequest (POST /objects/history)
 
 ```json
 {
@@ -216,9 +247,9 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 - `endTime` (string | null): RFC 3339 end time for filtering
 - `maxDepth` (integer, default: 1, min: 0): Controls recursion depth
 
-### Object List/Query Requests
+## Object List/Query Requests
 
-#### GetObjectsRequest (POST /objects/list)
+### GetObjectsRequest (POST /objects/list)
 
 ```json
 {
@@ -227,7 +258,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-#### GetObjectTypesRequest (POST /objecttypes/query)
+### GetObjectTypesRequest (POST /objecttypes/query)
 
 ```json
 {
@@ -235,7 +266,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-#### GetRelationshipTypesRequest (POST /relationshiptypes/query)
+### GetRelationshipTypesRequest (POST /relationshiptypes/query)
 
 ```json
 {
@@ -243,7 +274,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-#### GetRelatedObjectsRequest (POST /objects/related)
+### GetRelatedObjectsRequest (POST /objects/related)
 
 ```json
 {
@@ -258,9 +289,9 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 - `relationshipType` (string | null): Filter by relationship type
 - `includeMetadata` (boolean, default: false): Include full metadata in response
 
-### Subscription Models
+## Subscription Models
 
-#### CreateSubscriptionRequest (POST /subscriptions)
+### CreateSubscriptionRequest (POST /subscriptions)
 
 ```json
 {
@@ -271,7 +302,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 
 `clientId` is **required** and scopes the subscription to a specific client identifier. `displayName` is optional.
 
-#### CreateSubscriptionResponse
+### CreateSubscriptionResponse
 
 ```json
 {
@@ -284,7 +315,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-#### RegisterMonitoredItemsRequest (POST /subscriptions/register)
+### RegisterMonitoredItemsRequest (POST /subscriptions/register)
 
 ```json
 {
@@ -295,7 +326,7 @@ When `value` is null, `quality` must be `Bad` or `GoodNoData`.
 }
 ```
 
-#### SubscriptionSyncRequest (POST /subscriptions/sync)
+### SubscriptionSyncRequest (POST /subscriptions/sync)
 
 The sync endpoint uses sequence numbers to ensure no updates are lost. Clients acknowledge the last received batch via `lastSequenceNumber`. Omit `lastSequenceNumber` on the first call:
 

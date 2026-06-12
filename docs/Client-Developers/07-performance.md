@@ -1,8 +1,6 @@
 # Performance Optimization
 
-## Performance Optimization
-
-### 1. Batch Requests
+## Batch Requests
 
 When possible, batch multiple operations using `elementIds` arrays:
 
@@ -41,7 +39,7 @@ const batchGetObjects = async (token, elementIds) => {
 };
 ```
 
-### 2. Control Recursion Depth
+## Control Recursion Depth
 
 Use the `maxDepth` parameter to limit data retrieval for compositional hierarchies:
 
@@ -67,7 +65,7 @@ const getObjectWithChildren = async (token, elementIds, depth = 1) => {
 };
 ```
 
-### 3. Time-Bounded Historical Queries
+## Time-Bounded Historical Queries
 
 When querying historical data, always specify time bounds to limit result size:
 
@@ -92,7 +90,7 @@ const getHistoricalData = async (token, elementIds, startTime, endTime) => {
 };
 ```
 
-### 4. Prefer Sync over Stream for Reliability
+## Prefer Sync over Stream for Reliability
 
 For applications where data loss is unacceptable, use the sync endpoint instead of SSE streaming. Sync uses sequence numbers to guarantee delivery even if the client crashes:
 
@@ -123,7 +121,7 @@ const pollSubscription = async (token, clientId, subscriptionId, lastSequenceNum
 };
 ```
 
-### 5. Cache Static Data Aggressively
+## Cache Static Data Aggressively
 
 Namespaces, object types, and relationship types change rarely. Cache them with a long TTL:
 

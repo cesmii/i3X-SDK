@@ -1,8 +1,6 @@
 # Client Developer Guide - Overview
 
-## Overview
-
-The i3X API provides a standardized interface for accessing and manipulating manufacturing data across diverse platforms. This guide is provided without warranty for application developers building clients that consume the API to create analytics, visualizations, notifications, and machine learning applications.
+The i3X API provides a common interface for accessing and manipulating manufacturing data across diverse platforms. This guide is provided without warranty for application developers building clients that consume the API to create analytics, visualizations, notifications, and machine learning applications.
 
 > **Note:** These documents are a companion to the formal [Implementation Guide](https://github.com/cesmii/i3X/blob/1.0/spec/IMPLEMENTATION_GUIDE.md). If there are differences between the two, the Implementation Guide should be considered authoritative; please report any errors you observe.
 

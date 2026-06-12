@@ -247,7 +247,7 @@ def get_object_history():
         max_depth = data.get('maxDepth', 1)
 
         if not element_ids:
-            return error_response(400, 'elementIds is required')
+            return error_response(400, 'Bad Request', 'elementIds is required')
 
         start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00')) if start_time_str else None
         end_time = datetime.fromisoformat(end_time_str.replace('Z', '+00:00')) if end_time_str else None
@@ -350,15 +350,15 @@ def require_auth(f):
         auth_header = request.headers.get('Authorization')
 
         if not auth_header:
-            return error_response(401, 'Authorization header required')
+            return error_response(401, 'Unauthorized', 'Authorization header required')
 
         parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != 'bearer':
-            return error_response(401, 'Invalid authorization header format')
+            return error_response(401, 'Unauthorized', 'Invalid authorization header format')
 
         user = auth_service.validate_token(parts[1])
         if not user:
-            return error_response(401, 'Invalid or expired token')
+            return error_response(401, 'Unauthorized', 'Invalid or expired token')
 
         request.current_user = user
         return f(*args, **kwargs)
@@ -675,7 +675,7 @@ def update_object_value_not_implemented():
 
 ## Best Practices
 
-### 1. Consistent Error Responses
+### Consistent Error Responses
 
 Always use the standard error envelope — never return framework-default error formats:
 
@@ -689,7 +689,7 @@ def server_error(e):
     return jsonify({"success": False, "responseDetail": {"title": "Internal Server Error", "status": 500, "detail": "Internal server error"}}), 500
 ```
 
-### 2. Request Logging
+### Request Logging
 
 ```python
 import time
@@ -705,7 +705,7 @@ def after_request(response):
     return response
 ```
 
-### 3. Connection Pooling
+### Connection Pooling
 
 ```python
 from sqlalchemy import create_engine

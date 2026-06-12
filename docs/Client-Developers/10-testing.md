@@ -1,8 +1,6 @@
 # Testing Your Client Application
 
-## Testing Your Client Application
-
-### Unit Testing with Mock API
+## Unit Testing with Mock API
 
 Mock responses should reflect the standard response envelope (`success`/`result` for success; `success`/`responseDetail` for failure):
 
@@ -71,7 +69,7 @@ test('should handle bulk value response', async () => {
 });
 ```
 
-### Integration Testing
+## Integration Testing
 
 ```javascript
 describe('i3X API Integration', () => {
