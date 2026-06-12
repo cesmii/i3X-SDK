@@ -7,7 +7,7 @@ const FeatureList = [
   {
     title: 'Server Developers',
     img: '/img/i3X_Server.png',
-    link: '/docs/Server-Developers/overview',
+    link: '/Server-Developers/overview',
     description: (
       <>
         Access the technical documentation for server implementations, providing everything needed to integrate, configure, and integrate I3X on your existing infrastructure or platforms.
@@ -17,7 +17,7 @@ const FeatureList = [
   {
     title: 'Client Developers',
     img: '/img/i3X_Client.png',
-    link: '/docs/Client-Developers/overview',
+    link: '/Client-Developers/overview',
     description: (
       <>
         Build responsive, user-facing experiences with ease. Connect with i3X via documentation, code samples and resources that
@@ -34,7 +34,7 @@ function Feature({img, title, description, link}) {
     <div className={clsx('col col-4')}>
       <div className="text--center">
         {link ? (
-          <a href={link}>
+          <a href={useBaseUrl(link)}>
             <img src={imgUrl} className={styles.featureSvg} alt={title} />
           </a>
         ) : (
@@ -43,7 +43,7 @@ function Feature({img, title, description, link}) {
       </div>
       <div className="text--center padding-horiz--md">
         {link ? (
-          <a href={link} style={{textDecoration: 'none', color: 'inherit'}}>
+          <a href={useBaseUrl(link)} style={{textDecoration: 'none', color: 'inherit'}}>
             <Heading as="h3">{title}</Heading>
           </a>
         ) : (
