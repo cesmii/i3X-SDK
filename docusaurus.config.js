@@ -99,6 +99,11 @@ const config = {
             position: 'left',
           },
           {
+            href: '/gotchas',
+            label: 'Gotchas',
+            position: 'left',
+          },
+          {
             href: 'https://acetechnologies.net/i3X',
             label: 'i3X Explorer',
             position: 'left',
