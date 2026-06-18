@@ -71,3 +71,9 @@ If a subscription receives neither a `/sync` call nor an active stream within th
 ### Successful writes return `result: null`
 
 This is intentional, not an error: write entries confirm acceptance via `success: true` and do not echo the written VQT. Read the value back with `POST /objects/value` if you need confirmation of state.
+
+## Transport
+
+### `Accept-Encoding: gzip` must be honored on the SSE stream too
+
+Gzip is required on *every* endpoint when the client requests it — including `POST /subscriptions/stream`. The trap: off-the-shelf compression middleware buffers output to build efficient blocks, which holds individual SSE events inside the compressor instead of sending them, so the stream appears to stall. Don't fix that by disabling compression on the stream — that breaks conformance. Instead compress the stream yourself and **sync-flush** (zlib `Z_SYNC_FLUSH`; e.g. Java `new GZIPOutputStream(out, true)` + `flush()` per event) after each event, so every event goes out immediately while the body stays a valid gzip stream; write the gzip trailer on close. Set `Content-Encoding: gzip` and `Vary: Accept-Encoding`.
